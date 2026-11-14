@@ -1,3 +1,4 @@
 /build/
 /.mygo/
+/*.exe
 mygo_windows_*.syso
