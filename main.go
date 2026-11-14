@@ -98,7 +98,7 @@ func (a *App) open() {
 		StateKey:             "main",
 		TitleBarStyle:        mygo.TitleBarHidden,
 		TrafficLightPosition: &mygo.Point{X: 16, Y: 15},
-		BackgroundColor:      "light-dark(#efe1e6, #231e27)",
+		BackgroundColor:      "light-dark(#efe1e6, #101012)",
 		Content:              ui.View(a.view),
 	}
 	if ownControls {

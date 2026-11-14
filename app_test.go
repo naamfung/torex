@@ -16,11 +16,12 @@ import (
 )
 
 // testShell is the shell of the tests: its prompt ends with prompt, and
-// typing run runs program for a while in dir.
+// typing run runs program for a while in dir. On Windows the panes run
+// GoRex's own WinKit shell, whose applets are busybox's.
 var testShell = func() (s struct{ path, prompt, run, program, dir string }) {
 	if runtime.GOOS == "windows" {
-		s.path, s.prompt, s.program, s.dir = "cmd.exe", ">", "PING", os.Getenv("SystemRoot")
-		s.run = `cd /d ` + s.dir + ` && ping -n 4 127.0.0.1 >nul`
+		s.prompt, s.program, s.dir = "#", "busybox", os.Getenv("SystemRoot")
+		s.run = "cd " + filepath.ToSlash(s.dir) + " && sleep 3"
 		return
 	}
 	s.path, s.prompt, s.run, s.program, s.dir = "/bin/sh", "$", "cd /usr/bin && sleep 3", "sleep", "/usr/bin"

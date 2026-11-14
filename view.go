@@ -223,6 +223,20 @@ func (a *App) node(c *ui.Context, k *colors, t *Tab, n *Node) ui.Element {
 // paneCard draws a pane: a card with a header over its terminal.
 func (a *App) paneCard(c *ui.Context, k *colors, t *Tab, p *Pane) ui.Element {
 	focused := t.Focus == p
+	// The cursor shows in the pane with the focus, in the window with it:
+	// a hollow box would be a cursor in a pane that cannot type into it,
+	// which WinKit's consoles do not show.
+	if show := focused && a.focusedWin; p.term != nil && !p.closed && (!p.cursorSet || p.cursorOn != show) {
+		p.cursorSet, p.cursorOn = true, show
+		term := p.term
+		a.post(func() {
+			if show {
+				term.Feed([]byte("\x1b[?25h"))
+			} else {
+				term.Feed([]byte("\x1b[?25l"))
+			}
+		})
+	}
 	card := ui.Column(c.Key(p.ID)).Radius(cardR).Clip().MinWidth(0).MinHeight(0)
 	bg, border, shadow := k.card, k.cardBorder, k.shadow
 	if focused {
@@ -234,7 +248,13 @@ func (a *App) paneCard(c *ui.Context, k *colors, t *Tab, p *Pane) ui.Element {
 	card.Transition(ui.ElementTransition{Colors: true, Duration: 160 * time.Millisecond})
 	hovered := card.Hovered()
 	card.Children(func() {
-		a.paneHeader(c, k, t, p, focused, hovered)
+		// A pane alone in its tab keeps its header out of the layout: the
+		// terminal fills the card, and the header comes over its top as the
+		// pointer does, with the buttons to split, zoom and close.
+		alone := t.Root.Pane != nil
+		if !alone {
+			a.paneHeader(c, k, t, p, focused, hovered)
+		}
 		body := ui.Box(c).Grow(1).MinHeight(0).Padding(0, 5, 6, 5)
 		body.Children(func() {
 			if p.term == nil {
@@ -253,6 +273,11 @@ func (a *App) paneCard(c *ui.Context, k *colors, t *Tab, p *Pane) ui.Element {
 				p.attention = false
 			}
 		})
+		if alone {
+			if _, y, over := card.PointerPosition(); over && y <= headerH+2 {
+				a.paneHeaderOverlay(c, k, t, p, focused)
+			}
+		}
 	})
 	p.bounds = card.Bounds()
 	if card.Pressed() && t.Focus != p {
@@ -264,7 +289,7 @@ func (a *App) paneCard(c *ui.Context, k *colors, t *Tab, p *Pane) ui.Element {
 
 // paneHeader draws a pane's program, title and directory, its activity,
 // and its buttons.
-func (a *App) paneHeader(c *ui.Context, k *colors, t *Tab, p *Pane, focused, hovered bool) {
+func (a *App) paneHeader(c *ui.Context, k *colors, t *Tab, p *Pane, focused, hovered bool) ui.Element {
 	name, detail := p.label()
 	prog := programOf(p.info.Program)
 	if p.info.Idle || p.info.Program == "" {
@@ -314,6 +339,15 @@ func (a *App) paneHeader(c *ui.Context, k *colors, t *Tab, p *Pane, focused, hov
 			}
 		})
 	})
+	return h
+}
+
+// paneHeaderOverlay shows a pane's header over its terminal's top, for a
+// pane alone in its tab: the header takes no row there, and the pointer
+// at the top of the pane brings it, with its buttons, back.
+func (a *App) paneHeaderOverlay(c *ui.Context, k *colors, t *Tab, p *Pane, focused bool) {
+	h := a.paneHeader(c, k, t, p, focused, true)
+	h.Attach(ui.AnchorTopLeft, ui.AnchorTopLeft).Left(0).Top(0).WidthPercent(100).Background(k.panel)
 }
 
 // status is what a pane is doing.

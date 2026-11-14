@@ -1,0 +1,20 @@
+" GoRex's vim: the shell of this runtime is a POSIX one, not cmd.exe, and
+" the terminal of a pane speaks UTF-8.
+
+" Vim loads its defaults only when it finds no vimrc; this one is the system
+" vimrc, so it loads them itself.
+if filereadable($VIMRUNTIME . '/defaults.vim')
+  execute 'source' fnameescape($VIMRUNTIME . '/defaults.vim')
+endif
+
+set encoding=utf-8
+set fileencodings=ucs-bom,utf-8,gb18030,big5,latin1
+
+" External commands, such as a filter on a range, run through the runtime's
+" shell, with the quoting a POSIX shell wants.
+set shell=/bin/sh
+set shellcmdflag=-c
+set shellredir=>
+set shellpipe=2>&1\|\ tee
+set shellquote=
+set shellxquote=

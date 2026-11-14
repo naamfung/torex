@@ -65,18 +65,20 @@ var lightColors = colors{
 }
 
 var darkColors = colors{
-	bgTop:    ui.Hex("#2c2131"),
-	bgMid:    ui.Hex("#231e27"),
-	bgLow:    ui.Hex("#221f22"),
-	bgBottom: ui.Hex("#2a2619"),
-	bgTint:   ui.RGBA(80, 40, 60, 0.25),
+	// Near black, as WinKit's console: the panes are black over a black
+	// window, so that the terminal is the paper of the window.
+	bgTop:    ui.Hex("#161618"),
+	bgMid:    ui.Hex("#101012"),
+	bgLow:    ui.Hex("#0c0c0e"),
+	bgBottom: ui.Hex("#121214"),
+	bgTint:   ui.RGBA(255, 255, 255, 0.02),
 
-	card:              ui.RGBA(20, 20, 24, 0.5),
-	cardFocused:       ui.RGBA(36, 36, 41, 0.94),
-	cardBorder:        ui.RGBA(255, 255, 255, 0.05),
-	cardBorderFocused: ui.RGBA(255, 255, 255, 0.14),
-	shadow:            ui.RGBA(0, 0, 0, 0.25),
-	shadowFocused:     ui.RGBA(0, 0, 0, 0.4),
+	card:              ui.RGBA(0, 0, 0, 0.3),
+	cardFocused:       ui.RGBA(0, 0, 0, 0.94),
+	cardBorder:        ui.RGBA(255, 255, 255, 0.06),
+	cardBorderFocused: ui.RGBA(255, 255, 255, 0.16),
+	shadow:            ui.RGBA(0, 0, 0, 0.3),
+	shadowFocused:     ui.RGBA(0, 0, 0, 0.5),
 
 	text:      ui.Hex("#f2f2f7"),
 	textMuted: ui.Hex("#aeaeb2"),
@@ -95,10 +97,10 @@ var darkColors = colors{
 	attention: ui.Hex("#fbbf24"),
 	exited:    ui.Hex("#636366"),
 
-	panel:       ui.RGBA(38, 38, 42, 0.97),
+	panel:       ui.RGBA(20, 20, 23, 0.97),
 	panelBorder: ui.RGBA(255, 255, 255, 0.1),
 	panelSel:    ui.RGBA(108, 178, 255, 0.18),
-	backdrop:    ui.RGBA(0, 0, 0, 0.2),
+	backdrop:    ui.RGBA(0, 0, 0, 0.35),
 }
 
 func colorsOf(c *ui.Context) *colors {
@@ -137,7 +139,8 @@ func registerFonts() {
 	}
 }
 
-var termFont = terminal.Font{Family: "JetBrains Mono, SF Mono, Menlo, monospace", Size: 11.6, LineHeight: 1.0}
+// WinKit's console font: Cascadia Mono SemiBold, at a 24-pixel cell.
+var termFont = terminal.Font{Family: "Cascadia Mono, monospace", Size: 18, Weight: 600, LineHeight: 1.0}
 
 // The terminals' colors: soft ink on the panes' paper, and the dark kind.
 var lightTerm = &terminal.Theme{
@@ -154,14 +157,16 @@ var lightTerm = &terminal.Theme{
 }
 
 var darkTerm = &terminal.Theme{
-	Foreground: ui.Hex("#e6e6ea"),
-	Background: ui.Hex("#1e1e22"),
-	Cursor:     ui.Hex("#e6e6ea"),
+	Foreground: ui.Hex("#cccccc"),
+	Background: ui.Hex("#0c0c0c"),
+	Cursor:     ui.Hex("#cccccc"),
 	Selection:  ui.RGBA(108, 178, 255, 0.28),
+	// The console's palette, as Windows Terminal's Campbell: WinKit's
+	// green prompts and blue directories show as they do there.
 	Palette: [16]ui.Color{
-		ui.Hex("#3a3a40"), ui.Hex("#ff6b7f"), ui.Hex("#7bd88f"), ui.Hex("#e5c07b"),
-		ui.Hex("#6cb2ff"), ui.Hex("#c792ea"), ui.Hex("#56d4dd"), ui.Hex("#d0d0d6"),
-		ui.Hex("#6e6e78"), ui.Hex("#ff8c9c"), ui.Hex("#9be8a8"), ui.Hex("#f2d28a"),
-		ui.Hex("#8ec5ff"), ui.Hex("#d7a8f2"), ui.Hex("#7fe3ea"), ui.Hex("#ffffff"),
+		ui.Hex("#0c0c0c"), ui.Hex("#c50f1f"), ui.Hex("#13a10e"), ui.Hex("#c19c00"),
+		ui.Hex("#0037da"), ui.Hex("#881798"), ui.Hex("#3a96dd"), ui.Hex("#cccccc"),
+		ui.Hex("#767676"), ui.Hex("#e74856"), ui.Hex("#16c60c"), ui.Hex("#f9f1a5"),
+		ui.Hex("#3b78ff"), ui.Hex("#b4009e"), ui.Hex("#61d6d6"), ui.Hex("#f2f2f2"),
 	},
 }

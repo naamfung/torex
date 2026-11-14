@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -75,10 +76,6 @@ func (a *attached) writer() {
 }
 
 func newSession(id string, o CreateOptions) (*session, error) {
-	path, argv, name, err := shellCommand(o.Command)
-	if err != nil {
-		return nil, err
-	}
 	cols, rows := o.Cols, o.Rows
 	if cols <= 0 || rows <= 0 {
 		cols, rows = 80, 24
@@ -87,7 +84,11 @@ func newSession(id string, o CreateOptions) (*session, error) {
 	if dir == "" {
 		dir, _ = os.UserHomeDir()
 	}
-	env := sessionEnv(id, o.Env)
+	path, argv, name, shellEnv, err := shellCommand(o.Command, dir)
+	if err != nil {
+		return nil, err
+	}
+	env := sessionEnv(id, append(shellEnv, o.Env...))
 	p, err := startPTY(path, argv, dir, env, cols, rows)
 	if err != nil {
 		return nil, err
@@ -137,14 +138,21 @@ func newSession(id string, o CreateOptions) (*session, error) {
 }
 
 // sessionEnv returns the environment of a session's shell: the server's,
-// without what other terminals set, and what terminal apps set.
+// without what other terminals set, and what terminal apps set. extra
+// replaces variables of the server's of the same name.
 func sessionEnv(id string, extra []string) []string {
+	over := make(map[string]bool, len(extra))
+	for _, kv := range extra {
+		k, _, _ := strings.Cut(kv, "=")
+		over[envKey(k)] = true
+	}
 	var env []string
 	hasLang := false
 	for _, kv := range os.Environ() {
 		k, _, _ := strings.Cut(kv, "=")
 		switch {
-		case k == "TERM", k == "COLORTERM", k == "TERM_PROGRAM", k == "TERM_PROGRAM_VERSION",
+		case over[envKey(k)],
+			k == "TERM", k == "COLORTERM", k == "TERM_PROGRAM", k == "TERM_PROGRAM_VERSION",
 			k == "TERM_SESSION_ID", k == "TMUX", k == "TMUX_PANE", k == "STY", k == "WINDOWID",
 			k == "COLUMNS", k == "LINES", k == "SHLVL", k == "OLDPWD", k == "PWD", k == "_",
 			strings.HasPrefix(k, "ITERM_"), strings.HasPrefix(k, "GHOSTTY_"), strings.HasPrefix(k, "KITTY_"),
@@ -167,6 +175,15 @@ func sessionEnv(id string, extra []string) []string {
 		env = append(env, "LANG=en_US.UTF-8")
 	}
 	return append(env, extra...)
+}
+
+// envKey names an environment variable for comparison, whose case Windows
+// does not tell.
+func envKey(k string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ToUpper(k)
+	}
+	return k
 }
 
 func (s *session) read() {
@@ -340,7 +357,9 @@ func (s *session) info() SessionInfo {
 	in.Idle = fg == in.PID
 	p := inspect(fg)
 	in.Program, in.Args, in.Dir = p.programName(), p.args, p.dir
-	if in.Program == "" {
+	// At its prompt, the shell is what runs, though WinKit's busybox is
+	// named by its image, and the shell (sh) by its applet.
+	if in.Program == "" || in.Idle {
 		in.Program = s.shell
 	}
 	if in.Dir == "" && !in.Idle {

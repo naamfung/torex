@@ -1,0 +1,49 @@
+# GoRex's copy of WinKit's shell runtime: the POSIX shell's basics, and
+# the directory a pane opens in. A WinKit installation's own profile, with
+# the tools it adds, is $WINKIT_HOME/etc/profile of that installation.
+export PATH_SEPARATOR=';'
+export ac_executable_extensions=.exe
+export build_alias=x86_64-w64-mingw32
+export LANG=en_US.UTF-8
+
+# Vim, the runtime's editor, with the runtime's files beside it: vim looks for
+# $VIMRUNTIME, which also names its system vimrc.
+VIMRUNTIME="$WINKIT_HOME/vim"
+export VIMRUNTIME
+alias vi=vim
+
+# Check if we need to change directory after login: GoRex names the
+# directory of the pane in CD_DIR.
+if [ -n "$CD_DIR" ]; then
+	cd "$CD_DIR"
+	unset CD_DIR
+fi
+
+# The prompt, as WinKit's: root in an elevated window, else the Windows
+# user; the user in green, a warm @ before the directory, as Windows
+# names it. The first prompt starts the screen; the later ones start a
+# line of their own, as a program's output may end without a newline, as
+# cat of a file that has none does.
+case $- in
+*i*)
+	if net session >/dev/null 2>&1; then
+		PROMPT_USER=root
+		PROMPT_SIGN='#'
+	else
+		PROMPT_USER=${USERNAME:-${LOGNAME:-user}}
+		PROMPT_SIGN='$'
+	fi
+	prompt_nl() {
+		if [ -e "$HOME/.gorex-prompt-$GOREX_PROMPT_ID" ]; then
+			# The reset keeps the newline from being a trailing one, which
+			# a command substitution takes away.
+			printf '\n\033[0m'
+		else
+			: > "$HOME/.gorex-prompt-$GOREX_PROMPT_ID"
+		fi
+	}
+	GOREX_PROMPT_ID=$$
+	trap 'rm -f "$HOME/.gorex-prompt-$GOREX_PROMPT_ID"' 0
+	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
+	;;
+esac

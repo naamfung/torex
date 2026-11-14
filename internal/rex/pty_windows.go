@@ -12,6 +12,8 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+
+	"gorex/internal/winkit"
 )
 
 var (
@@ -84,6 +86,10 @@ func (p *pty) spawn(path string, argv []string, dir string, env []string) error 
 	if err != nil {
 		return err
 	}
+	app, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
 	wdir, err := windows.UTF16PtrFromString(dir)
 	if err != nil {
 		return err
@@ -94,7 +100,9 @@ func (p *pty) spawn(path string, argv []string, dir string, env []string) error 
 	// nothing that runs in its consoles.
 	procSetConsoleCtrlHandler.Call(0, 0)
 	var pi windows.ProcessInformation
-	err = windows.CreateProcess(nil, cmdline, nil, nil, false,
+	// The program is path, which the command line may name otherwise, as
+	// busybox does an applet.
+	err = windows.CreateProcess(app, cmdline, nil, nil, false,
 		windows.EXTENDED_STARTUPINFO_PRESENT|windows.CREATE_UNICODE_ENVIRONMENT,
 		&block[0], wdir, &si.StartupInfo, &pi)
 	if err != nil {
@@ -169,9 +177,10 @@ func (p *pty) kill() {
 	}
 }
 
-// foreground returns the program the shell runs: the child it started
-// last, past the command interpreters that run batch files; 0 when it
-// runs none.
+// foreground returns the program the shell runs: the newest child it
+// started, past the processes that only run another, as the command
+// interpreters that run batch files and WinKit's busybox the fork servers
+// of its applets and programs; 0 when it runs none.
 func (p *pty) foreground() int {
 	tree := processTree()
 	fg := 0
@@ -181,11 +190,29 @@ func (p *pty) foreground() int {
 			break
 		}
 		fg, parent = int(child), child
-		if !strings.EqualFold(tree.name[child], "cmd.exe") {
+		if !wrapper(tree, child) {
 			break
 		}
 	}
 	return fg
+}
+
+// wrapper reports whether a process only runs another: cmd.exe a batch
+// file, and WinKit's busybox the fork servers that run its applets and
+// the programs of its shell.
+func wrapper(tree procTree, pid uint32) bool {
+	name := tree.name[pid]
+	if strings.EqualFold(name, "cmd.exe") {
+		return true
+	}
+	if strings.EqualFold(name, "busybox.exe") {
+		for _, a := range inspect(int(pid)).args[1:] {
+			if a == "--fs" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // coord packs the size of a console.
@@ -194,9 +221,14 @@ func coord(cols, rows int) windows.Coord {
 }
 
 // commandLine joins a program and its arguments as programs split them;
-// argv[0] is the program's name.
+// argv[0] is the program's name, which a program may find useful: busybox
+// runs the applet its argv[0] names.
 func commandLine(path string, argv []string) string {
-	parts := []string{windows.EscapeArg(path)}
+	prog := path
+	if len(argv) > 0 && argv[0] != "" {
+		prog = argv[0]
+	}
+	parts := []string{windows.EscapeArg(prog)}
 	for _, a := range argv[min(1, len(argv)):] {
 		parts = append(parts, windows.EscapeArg(a))
 	}
@@ -217,43 +249,120 @@ func environmentBlock(env []string) []uint16 {
 	return append(b, 0)
 }
 
-// shellCommand returns the program, its arguments and the shell's name
-// for a session: when cmd is empty, $SHELL when it names a program of
-// Windows (not one of MSYS's paths), else PowerShell, else the command
-// interpreter.
-func shellCommand(cmd []string) (path string, argv []string, name string, err error) {
+// shellCommand returns the program, its arguments, the shell's name and
+// what its environment needs beyond the server's for a session in dir:
+// when cmd is empty, $SHELL when it names a program of Windows (not one
+// of MSYS's paths), else the shell of GoRex's own WinKit runtime, else
+// PowerShell, else the command interpreter. A shell of WinKit's runs as
+// its busybox's login shell, with WinKit's environment.
+func shellCommand(cmd []string, dir string) (path string, argv []string, name string, extraEnv []string, err error) {
 	if len(cmd) > 0 {
 		path, err = exec.LookPath(cmd[0])
 		if err != nil {
-			return "", nil, "", err
+			return "", nil, "", nil, err
 		}
-		return path, cmd, exeName(cmd[0]), nil
+		if bb, wkArgv, env, ok := winkitShell(path, dir); ok {
+			return bb, wkArgv, "sh", env, nil
+		}
+		return path, cmd, exeName(cmd[0]), nil, nil
 	}
-	for _, sh := range []string{os.Getenv("SHELL"), "pwsh.exe", "powershell.exe", os.Getenv("COMSPEC"), "cmd.exe"} {
-		if sh == "" {
-			continue
-		}
-		if path, err = exec.LookPath(sh); err == nil {
-			name = exeName(sh)
-			argv = []string{filepath.Base(sh)}
-			if strings.EqualFold(name, "pwsh") || strings.EqualFold(name, "powershell") {
-				argv = append(argv, "-NoExit", "-Command", powershellPrompt)
-			}
-			return path, argv, name, nil
-		}
+	// Panes run WinKit's POSIX shell and no shell of Windows: a terminal
+	// whose panes all behave alike, whatever the machine has installed.
+	path = builtinShell()
+	if path == "" {
+		return "", nil, "", nil, errors.New("rex: GoRex could not unpack WinKit's shell")
 	}
-	return "", nil, "", errors.New("rex: no shell found")
+	bb, wkArgv, env, ok := winkitShell(path, dir)
+	if !ok {
+		return "", nil, "", nil, fmt.Errorf("rex: %s is not WinKit's shell", path)
+	}
+	return bb, wkArgv, "sh", env, nil
 }
 
-// powershellPrompt makes PowerShell's prompt set the process's directory
-// to its location, which cd changes alone: the server then finds where it
-// is as it does for other shells. $? stays as the command left it, for the
-// prompt of the profile, which runs first.
-const powershellPrompt = `$global:__GoRexPrompt = $function:prompt; ` +
-	`function global:prompt { $ok = $global:?; ` +
-	`try { $l = $executionContext.SessionState.Path.CurrentLocation; ` +
-	`if ($l.Provider.Name -eq 'FileSystem') { [Environment]::CurrentDirectory = $l.ProviderPath } } catch {}; ` +
-	`if (-not $ok) { Write-Error '' -ErrorAction Ignore }; & $global:__GoRexPrompt }`
+// builtinShell returns the shell of the POSIX shell runtime embedded in
+// GoRex, unpacked in its data directory: empty when it cannot be.
+func builtinShell() string {
+	sh, _ := winkit.Shell(filepath.Join(Dir(), "winkit"))
+	return sh
+}
+
+// winkitShell returns how to run the shell of a WinKit install when path
+// is one of its shells, the stubs of its busybox: busybox.exe runs the
+// applet its argv[0] names, so it runs as "sh", a login shell whose
+// profile is WinKit's. A login shell changes to its home, whence the
+// profile returns to the directory that CD_DIR names, as WinKit's
+// launcher does. WinKit's launcher would wrap the shell in a process of
+// its own, so the session runs the busybox directly, with the environment
+// the launcher sets.
+func winkitShell(path, dir string) (busybox string, argv, env []string, ok bool) {
+	bin := filepath.Dir(path)
+	if !strings.EqualFold(filepath.Base(bin), "bin") || !winkitShellName(exeName(path)) {
+		return "", nil, nil, false
+	}
+	root := filepath.Dir(bin)
+	if st, err := os.Stat(filepath.Join(root, "winkit.ini")); err != nil || st.IsDir() {
+		return "", nil, nil, false
+	}
+	busybox = filepath.Join(bin, "busybox.exe")
+	if st, err := os.Stat(busybox); err != nil || st.IsDir() {
+		return "", nil, nil, false
+	}
+	env = []string{
+		"WINKIT_HOME=" + root,
+		"HOME=" + winkitHome(root),
+		"PATH=" + bin + ";" + os.Getenv("PATH"),
+	}
+	// A WinKit installation keeps the settings of the programs it runs in
+	// its share directory; GoRex's own runtime leaves them to Windows.
+	if st, err := os.Stat(filepath.Join(root, "share")); err == nil && st.IsDir() {
+		env = append(env, "APPDATA="+filepath.Join(root, "share"))
+	}
+	if dir != "" {
+		env = append(env, "CD_DIR="+dir)
+	}
+	return busybox, []string{"sh", "-l"}, env, true
+}
+
+func winkitShellName(name string) bool {
+	switch strings.ToLower(name) {
+	case "sh", "ash", "bash", "busybox":
+		return true
+	}
+	return false
+}
+
+// winkitHome returns the $HOME winkit.ini names, or root\root: the
+// directory of the profile that a login shell runs.
+func winkitHome(root string) string {
+	home := filepath.Join(root, "root")
+	b, err := os.ReadFile(filepath.Join(root, "winkit.ini"))
+	if err != nil {
+		return home
+	}
+	inWinkit := false
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(strings.TrimSuffix(line, "\r"))
+		if line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "[") {
+			inWinkit = strings.EqualFold(strings.Trim(line, "[] "), "winkit")
+			continue
+		}
+		if !inWinkit {
+			continue
+		}
+		if k, v, ok := strings.Cut(line, "="); ok && strings.EqualFold(strings.TrimSpace(k), "home") {
+			if v = strings.TrimSpace(v); v != "" {
+				if !filepath.IsAbs(v) {
+					v = filepath.Join(root, v)
+				}
+				return filepath.Clean(v)
+			}
+		}
+	}
+	return home
+}
 
 // processAlive reports whether a process runs.
 func processAlive(pid int) bool {

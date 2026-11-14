@@ -117,22 +117,23 @@ func (p *pty) hangup() {
 	p.master.Close()
 }
 
-// shellCommand returns the program, its arguments and the shell's name
-// for a session: the user's login shell when cmd is empty.
-func shellCommand(cmd []string) (path string, argv []string, name string, err error) {
+// shellCommand returns the program, its arguments, the shell's name and
+// what its environment needs beyond the server's for a session: the
+// user's login shell when cmd is empty.
+func shellCommand(cmd []string, _ string) (path string, argv []string, name string, extraEnv []string, err error) {
 	if len(cmd) == 0 {
 		sh := os.Getenv("SHELL")
 		if sh == "" {
 			sh = defaultShell
 		}
 		// A login shell, as terminal apps start it: "-zsh".
-		return sh, []string{"-" + filepath.Base(sh)}, filepath.Base(sh), nil
+		return sh, []string{"-" + filepath.Base(sh)}, filepath.Base(sh), nil, nil
 	}
 	path, err = exec.LookPath(cmd[0])
 	if err != nil {
-		return "", nil, "", err
+		return "", nil, "", nil, err
 	}
-	return path, cmd, filepath.Base(cmd[0]), nil
+	return path, cmd, filepath.Base(cmd[0]), nil, nil
 }
 
 // processAlive reports whether a process runs.

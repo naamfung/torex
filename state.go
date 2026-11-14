@@ -66,6 +66,9 @@ type Pane struct {
 	// bounds is where the pane's card was in the last frame.
 	bounds ui.Rect
 	closed bool
+	// cursorSet tells that the terminal's cursor shows or hides with the
+	// pane's focus, as cursorOn says it shows.
+	cursorSet, cursorOn bool
 	// restored tells that the session was made anew for a pane of a
 	// saved layout whose session was gone.
 	restored bool

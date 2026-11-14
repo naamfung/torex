@@ -18,7 +18,7 @@ type settings struct {
 	FontSize   float32 `json:"fontSize,omitempty"`
 }
 
-const defaultFontSize = 11.6
+const defaultFontSize = 18
 
 var prefs settings
 
@@ -27,6 +27,9 @@ func settingsPath() string { return filepath.Join(rex.Dir(), "settings.json") }
 func loadSettings() {
 	if b, err := os.ReadFile(settingsPath()); err == nil {
 		json.Unmarshal(b, &prefs)
+	} else {
+		// A window without settings is dark, as WinKit's console.
+		prefs.Appearance = "dark"
 	}
 	if prefs.FontSize < 6 || prefs.FontSize > 40 {
 		prefs.FontSize = defaultFontSize
