@@ -11,10 +11,17 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
+
+	"golang.org/x/sys/windows"
 )
 
 //go:embed all:runtime
 var runtime embed.FS
+
+// prefix names the directory of a runtime: an earlier build named it
+// busybox, as the shell was all it had.
+const prefix = "winkit-"
 
 // version names the runtime by the checksum of its files, which change
 // with WinKit's shell and the profiles: a copy of another runtime is
@@ -39,13 +46,14 @@ func runtimeVersion() string {
 			h.Write(b)
 			return nil
 		})
-		version = "busybox-" + hex.EncodeToString(h.Sum(nil)[:6])
+		version = prefix + hex.EncodeToString(h.Sum(nil)[:6])
 	})
 	return version
 }
 
 // Shell returns the program of the runtime's shell, unpacked in base when
-// it is not there: base\version\bin\busybox.exe.
+// it is not there: base\version\bin\busybox.exe. The runtimes of other
+// builds go once nothing runs from them.
 func Shell(base string) (string, bool) {
 	dir := filepath.Join(base, runtimeVersion())
 	shell := filepath.Join(dir, "bin", "busybox.exe")
@@ -57,7 +65,53 @@ func Shell(base string) (string, bool) {
 	if _, err := os.Stat(shell); err != nil {
 		return "", false
 	}
+	removeOld(base, filepath.Base(dir))
 	return shell, true
+}
+
+// removeOld removes the runtimes of base that nothing runs from: a build
+// unpacks beside the runtime of another, whose panes may still run it.
+func removeOld(base, keep string) {
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !e.IsDir() || name == keep || strings.HasSuffix(name, ".tmp") || !isRuntime(name) {
+			continue
+		}
+		// A runtime another window unpacked may not have a shell yet.
+		if info, err := e.Info(); err != nil || time.Since(info.ModTime()) < time.Minute {
+			continue
+		}
+		dir := filepath.Join(base, name)
+		if running(dir) {
+			continue
+		}
+		os.RemoveAll(dir)
+	}
+}
+
+// isRuntime tells that the name is one of a runtime, as this build and
+// earlier ones name them.
+func isRuntime(name string) bool {
+	return strings.HasPrefix(name, prefix) || strings.HasPrefix(name, "busybox-")
+}
+
+// running tells that a shell of dir runs: Windows keeps an image from being
+// opened without sharing.
+func running(dir string) bool {
+	p, err := windows.UTF16PtrFromString(filepath.Join(dir, "bin", "busybox.exe"))
+	if err != nil {
+		return true
+	}
+	h, err := windows.CreateFile(p, windows.GENERIC_READ, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		return !os.IsNotExist(err)
+	}
+	windows.CloseHandle(h)
+	return false
 }
 
 // unpack writes the runtime into dir, through a directory beside it, so
