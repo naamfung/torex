@@ -1,4 +1,6 @@
 /build/
 /.mygo/
-/*.exe
 mygo_windows_*.syso
+*.exe
+# The runtime's programs are embedded in the app, not build leftovers.
+!/internal/winkit/runtime/bin/*.exe

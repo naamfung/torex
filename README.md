@@ -74,6 +74,8 @@ go run ./tools/mkbusybox       # build WinKit's shell from source, with zig
 go run ./tools/mkbusybox -app  # Windows: the shell, then GoRex
 go run ./tools/mkvim           # build vim from source, with zig
 go run ./tools/mkvim -app      # Windows: vim, then GoRex
+go run ./tools/mkssh           # build the runtime's ssh client
+go run ./tools/mkssh -app      # Windows: ssh, then GoRex
 go run ./tools/mkicon  # redraw resources/icon.png
 ```
 
@@ -122,6 +124,12 @@ the defaults and the POSIX shell of the runtime, so a filter or `:!` runs in
 (of `%WINKIT_HOME%`), and copies the editor and its runtime into
 `internal/winkit/runtime`. `vi` is an alias of `vim`.
 
+The shell has no ssh, so the runtime carries one: a client written in Go
+(`cmd/ssh`, built by `tools/mkssh` into `bin/ssh.exe`) that logs in with the
+keys of `~/.ssh` or a password, checks hosts against `~/.ssh/known_hosts`,
+and runs a shell in a terminal of the pane's size. It does not read
+`~/.ssh/config`, nor use an agent, and has no port forwarding.
+
 ## Layout
 
 | | |
@@ -133,6 +141,7 @@ the defaults and the POSIX shell of the runtime, so a filter or `:!` runs in
 | `style.go`, `settings.go` | colors, fonts, terminal themes; appearance and text size |
 | `internal/rex` | the session server and its client: PTYs, foreground processes, headless screens, the socket protocol |
 | `internal/winkit` | the WinKit runtime embedded in the app, and its unpacking; source in `third_party/winkit` |
+| `cmd/ssh`, `tools/mkssh` | the ssh client of that runtime, and building it into it |
 | `tools/mkbusybox`, `tools/mkvim`, `tools/zigcc` | building that runtime from WinKit's busybox-w32 and vim's source with zig |
 
 Not replicated: Rex's connections to servers on other machines; GoRex's
