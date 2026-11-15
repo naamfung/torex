@@ -124,6 +124,8 @@ func (a *App) open() {
 		opts.TitleBarStyle, opts.Frameless = mygo.TitleBarDefault, true
 	}
 	win := mygo.NewWindow(opts)
+	// The surface shows white until its first frame: fill it at once.
+	prepaint(win)
 	a.win = win
 	// The folders to open: this launch's, and those of launches while
 	// another window ran.
