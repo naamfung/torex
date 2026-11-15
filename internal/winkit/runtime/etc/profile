@@ -43,8 +43,9 @@ case $- in
 		fi
 	}
 	# The mark is of this login shell, in the temporary directory rather than
-	# the user's home, which is theirs.
-	PROMPT_MARK=/tmp/.torex-prompt-$$
+	# the user's home, which is theirs. Windows' TEMP is the one that exists:
+	# the shell has no /tmp of its own.
+	PROMPT_MARK="${TMPDIR:-${TEMP:-$HOME}}/.torex-prompt-$$"
 	trap 'rm -f "$PROMPT_MARK"' 0
 	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
 	;;
