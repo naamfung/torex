@@ -22,7 +22,7 @@ const etcProfile = `# torex 在每个窗格的 shell 启动时加载这个文件
 #   export EDITOR=vim
 #   export PATH="$PATH:C:/tools/bin"
 #
-# $TOREX_HOME 是这个文件的上两级，即 torex 的安装目录；
+# $TOREX_HOME 是这个文件所在 etc 目录的上一级，即 torex 的安装目录；
 # 随程序一起带的目录可以这样指向：
 #
 #   export PATH="$TOREX_HOME/share/mytool/bin:$PATH"
