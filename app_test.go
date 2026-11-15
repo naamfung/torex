@@ -20,7 +20,7 @@ import (
 // torex's own WinKit shell, whose applets are busybox's.
 var testShell = func() (s struct{ path, prompt, run, program, dir string }) {
 	if runtime.GOOS == "windows" {
-		s.prompt, s.program, s.dir = "#", "busybox", os.Getenv("SystemRoot")
+		s.prompt, s.program, s.dir = "#", "sh", os.Getenv("SystemRoot")
 		s.run = "cd " + filepath.ToSlash(s.dir) + " && sleep 3"
 		return
 	}

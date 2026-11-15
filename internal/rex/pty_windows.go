@@ -206,7 +206,8 @@ func wrapper(tree procTree, pid uint32) bool {
 		return true
 	}
 	if strings.EqualFold(name, "busybox.exe") {
-		for _, a := range inspect(int(pid)).args[1:] {
+		args := inspect(int(pid)).args
+		for _, a := range args[min(1, len(args)):] {
 			if a == "--fs" {
 				return true
 			}

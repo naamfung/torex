@@ -357,6 +357,11 @@ func (s *session) info() SessionInfo {
 	in.Idle = fg == in.PID
 	p := inspect(fg)
 	in.Program, in.Args, in.Dir = p.programName(), p.args, p.dir
+	// WinKit's shell runs an applet in a fork server of its own, whose image
+	// is busybox: the program that runs there is the shell.
+	if strings.EqualFold(p.name, "busybox.exe") {
+		in.Program = s.shell
+	}
 	// At its prompt, the shell is what runs, though WinKit's busybox is
 	// named by its image, and the shell (sh) by its applet.
 	if in.Program == "" || in.Idle {
