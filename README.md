@@ -39,9 +39,10 @@
 torex 需要 [Go](https://go.dev/dl/) 1.27+ 与 MyGo 0.3.0，其 CLI 由 `go.mod` 以 tool 形式固定：
 
 ```sh
-go tool mygo dev     # Torex Dev，随代码改动重建并重启
+go tool mygo dev     # torex Dev，随代码改动重建并重启
 go test ./...        # 会话服务器，以及无窗口的视图
-go tool mygo build   # build/darwin-arm64/Torex.app 与 .dmg
+go tool mygo build   # build/darwin-arm64/torex.app 与 .dmg
+go run ./tools/mkapp # 同上，并把 Windows 安装包命名为「Torex Setup …」
 go run ./tools/mkbusybox       # 用 zig 从源码构建 WinKit 的 shell
 go run ./tools/mkbusybox -app  # Windows：先 shell，再 torex
 go run ./tools/mkvim           # 用 zig 从源码构建 vim
@@ -53,11 +54,11 @@ go run ./tools/mkicon  # 重绘 resources/icon.png
 
 `go get -tool github.com/egoist/mygo/cmd/mygo@latest` 会一并更新 MyGo 与其 CLI。
 
-应用把状态保存在自己的数据目录：服务器的套接字与日志、`layout.json` 和 `settings.json`；正式版在 `~/Library/Application Support/Torex`，`mygo dev` 的在 `Torex Dev`，所以开发永远不会碰到你在用的那份应用的会话（`TOREX_DIR` 可指定别的目录）。会话比应用活得久，但撑不过一次重建：开发版会替换旧版启动的服务器，结束其会话，随后这些会话在原目录重新启动。
+应用把状态保存在自己的数据目录：服务器的套接字与日志、`layout.json` 和 `settings.json`；正式版在 `~/Library/Application Support/torex`，`mygo dev` 的在 `torex Dev`，所以开发永远不会碰到你在用的那份应用的会话（`TOREX_DIR` 可指定别的目录）。会话比应用活得久，但撑不过一次重建：开发版会替换旧版启动的服务器，结束其会话，随后这些会话在原目录重新启动。
 
 ### Windows
 
-torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数据目录是 `%AppData%\Torex`。窗格跑的是 WinKit 的 POSIX shell——把它的 `busybox` 当作 `sh`，从源码构建并内嵌进 torex，运行时解包到数据目录下——不使用 Windows 的任何 shell：没有 PowerShell，没有 `cmd`，这样无论机器上装了什么，每个窗格的行为都一致。登录 shell 会设置 WinKit 的环境与提示符：窗口提权时是 `root@…`，否则是 Windows 用户名。窗口无边框，标题栏用这些按钮画出最小化、最大化与关闭；只能从两侧和底部调整大小，不能从顶部。
+torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数据目录是 `%AppData%\torex`。程序是 `torex.exe`，安装包是 `Torex Setup 0.1.0.exe`——`tools/mkapp` 在 `go tool mygo build` 之后把它的名字改写成产品名。窗格跑的是 WinKit 的 POSIX shell——把它的 `busybox` 当作 `sh`，从源码构建并内嵌进 torex，运行时解包到数据目录下——不使用 Windows 的任何 shell：没有 PowerShell，没有 `cmd`，这样无论机器上装了什么，每个窗格的行为都一致。登录 shell 会设置 WinKit 的环境与提示符：窗口提权时是 `root@…`，否则是 Windows 用户名。窗口无边框，标题栏用这些按钮画出最小化、最大化与关闭；只能从两侧和底部调整大小，不能从顶部。
 
 `internal/winkit` 承载内嵌进应用的运行时：WinKit 的 `busybox.exe`（作为 `sh`），连同 `winkit.ini` 与登录 shell 会读的 profile。`third_party/winkit` 有 WinKit 的源码（MIT）与 busybox-w32 源码包，`tools/mkbusybox` 会校验其校验和；该工具像 WinKit 的 Dockerfile 那样打上补丁并用 zig 构建 shell。`go run ./tools/mkbusybox -app` 用 Go 先构建 shell、再构建 torex；`go build` 与 `go tool mygo build` 内嵌 `internal/winkit/runtime` 里的 shell，新的一份按校验和解包到数据目录下。构建 shell 需要 zig、`make` 和 Git（Git 的 POSIX shell 用来跑 make 的配方，`git apply` 用来打补丁）；`tools/mkbusybox` 也会到 `%WINKIT_HOME%` 里找 WinKit 的 zig 与 make。
 
@@ -80,6 +81,7 @@ Windows 上 torex 每次启动都会把「在此目录启动 torex」写进资�
 | `internal/winkit` | 内嵌进应用的 WinKit 运行时，及其解包；源码在 `third_party/winkit` |
 | `cmd/ssh`、`tools/mkssh` | 该运行时的 ssh 客户端，以及把它构建进去 |
 | `tools/mkbusybox`、`tools/mkvim`、`tools/zigcc` | 用 zig 从 WinKit 的 busybox-w32 与 vim 源码构建该运行时 |
+| `tools/mkapp` | 用 MyGo 构建应用，并把 Windows 安装包命名为「Torex Setup …」 |
 
 未复刻：Rex 连接其他机器上服务器的能力；torex 的服务器只监听本地套接字。
 
