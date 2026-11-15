@@ -60,7 +60,7 @@ go run ./tools/mkicon  # 重绘 resources/icon.png
 
 ### Windows
 
-torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数据目录是 `%AppData%\torex`。程序是 `torex.exe`，安装包是 `Torex Setup 0.1.0.exe`——`tools/mkapp` 在 `go tool mygo build` 之后把它的名字改写成产品名。窗格跑的是 WinKit 的 POSIX shell——把它的 `busybox` 当作 `sh`，从源码构建并内嵌进 torex，运行时解包到数据目录下——不使用 Windows 的任何 shell：没有 PowerShell，没有 `cmd`，这样无论机器上装了什么，每个窗格的行为都一致。登录 shell 会设置 WinKit 的环境与提示符：窗口提权时是 `root@…`，否则是 Windows 用户名。`~` 指向 Windows 用户真正的家目录 `C:\Users\<用户名>`，因此 `~/.ssh` 的密钥、`~/.vimrc` 以及各程序的缓存都在它们自己的位置；提示符里的 `root` 只表示提权，不改变路径。窗口无边框，标题栏用这些按钮画出最小化、最大化与关闭；只能从两侧和底部调整大小，不能从顶部。
+torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数据目录是 `%AppData%\torex`。程序是 `torex.exe`，安装包是 `Torex Setup 0.1.0-<短哈希>.exe`——`tools/mkapp` 在 `go tool mygo build` 之后把它的名字改写成产品名，并接上最后提交的短哈希，好让每个安装包对得上它的源码；源码不是 Git 仓库时（例如直接下载 ZIP 包）只保留版本号。窗格跑的是 WinKit 的 POSIX shell——把它的 `busybox` 当作 `sh`，从源码构建并内嵌进 torex，运行时解包到数据目录下——不使用 Windows 的任何 shell：没有 PowerShell，没有 `cmd`，这样无论机器上装了什么，每个窗格的行为都一致。登录 shell 会设置 WinKit 的环境与提示符：窗口提权时是 `root@…`，否则是 Windows 用户名。`~` 指向 Windows 用户真正的家目录 `C:\Users\<用户名>`，因此 `~/.ssh` 的密钥、`~/.vimrc` 以及各程序的缓存都在它们自己的位置；提示符里的 `root` 只表示提权，不改变路径。窗口无边框，标题栏用这些按钮画出最小化、最大化与关闭；只能从两侧和底部调整大小，不能从顶部。
 
 `internal/winkit` 承载内嵌进应用的运行时：WinKit 的 `busybox.exe`（作为 `sh`），连同 `winkit.ini` 与登录 shell 会读的 profile。`third_party/winkit` 有 WinKit 的源码（MIT）与 busybox-w32 源码包，`tools/mkbusybox` 会校验其校验和；该工具像 WinKit 的 Dockerfile 那样打上补丁并用 zig 构建 shell。`go run ./tools/mkbusybox -app` 用 Go 先构建 shell、再构建 torex；`go build` 与 `go tool mygo build` 内嵌 `internal/winkit/runtime` 里的 shell，新的一份按校验和解包到数据目录下。构建 shell 需要 zig、`make` 和 Git（Git 的 POSIX shell 用来跑 make 的配方，`git apply` 用来打补丁）；`tools/mkbusybox` 也会到 `%WINKIT_HOME%` 里找 WinKit 的 zig 与 make。
 

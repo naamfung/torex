@@ -1,6 +1,7 @@
 #!/bin/sh
 # Build torex. The app comes with the runtime that the tree has; the
-# installer it makes is "Torex Setup <version>.exe".
+# installer it makes is "Torex Setup <version>-<revision>.exe", the revision
+# being the short hash of the last commit when the tree is a Git repository.
 #
 #	sh build.sh          the app, from the runtime in the tree
 #	sh build.sh all      the runtime's programs too, then the app

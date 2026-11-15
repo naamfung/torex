@@ -1,6 +1,7 @@
 // Command mkapp builds torex with MyGo, as mygo build does, and names its
-// installer "Torex Setup <version>.exe": the product's name, while the
-// program stays torex.exe, the name on the command line.
+// installer "Torex Setup <version>-<revision>.exe", the revision being the
+// short hash of the last commit: the product's name, while the program stays
+// torex.exe, the name on the command line.
 //
 //	go run ./tools/mkapp
 //
@@ -31,9 +32,10 @@ func main() {
 	}
 }
 
-// nameInstallers gives the installers of a build the name of the product, and
-// says where they are.
+// nameInstallers gives the installers of a build the name of the product and
+// its revision, and says where they are.
 func nameInstallers(root string) error {
+	rev := revision(root)
 	matches, err := filepath.Glob(filepath.Join(root, "build", "*", "torex Setup *.exe"))
 	if err != nil {
 		return err
@@ -45,7 +47,12 @@ func nameInstallers(root string) error {
 		if err := os.Rename(m, tmp); err != nil {
 			return err
 		}
-		dst := filepath.Join(filepath.Dir(m), "Torex"+strings.TrimPrefix(filepath.Base(m), "torex"))
+		name := "Torex" + strings.TrimPrefix(filepath.Base(m), "torex")
+		name = strings.TrimSuffix(name, ".exe")
+		if rev != "" {
+			name += "-" + rev
+		}
+		dst := filepath.Join(filepath.Dir(m), name+".exe")
 		if err := os.Rename(tmp, dst); err != nil {
 			return err
 		}
@@ -56,6 +63,18 @@ func nameInstallers(root string) error {
 		fmt.Printf("mkapp: %s\n", rel)
 	}
 	return nil
+}
+
+// revision is the short hash of the last commit of torex, or "" when there
+// is no repository, as when the source comes as a ZIP archive.
+func revision(root string) string {
+	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // moduleRoot returns the directory of the go.mod of torex.
