@@ -1,5 +1,5 @@
-// Mkicon draws torex's icon, resources/icon.png: the window's gradient in
-// the squircle of macOS icons, with panes on it as the app splits them.
+// Mkicon draws torex's icon, resources/icon.png: a black tile with a
+// terminal on it, the prompt in green and the cursor in cyan.
 //
 //	go run ./tools/mkicon
 package main
@@ -22,51 +22,36 @@ func main() {
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 	// The squircle of macOS's icon grid: 824 wide, inset by 100.
 	x0, y0, w := float32(100), float32(100), float32(824)
-	shadow(img, x0+6, y0+12, w-12, w-12, 186, 20, color.RGBA{60, 30, 50, 46})
-	grad := gradient(size, []stop{{0, rgb(0xf7e4f6)}, {0.45, rgb(0xeedbe3)}, {0.7, rgb(0xeeddd0)}, {1, rgb(0xebdcb2)}})
-	fill(img, squircle(x0, y0, w, w, 186), grad)
-	// The panes: one left above another, one right, as the app shows them.
-	pad, gap := float32(70), float32(36)
-	inner := w - 2*pad
-	lw := inner*0.54 - gap/2
-	th := inner*0.5 - gap/2
-	cards := []struct {
-		x, y, w, h float32
-		a          uint8
-	}{
-		{x0 + pad, y0 + pad + 40, lw, th, 250},
-		{x0 + pad, y0 + pad + 40 + th + gap, lw, inner - th - gap - 40, 175},
-		{x0 + pad + lw + gap, y0 + pad + 40, inner - lw - gap, inner - 40, 175},
+	shadow(img, x0+6, y0+12, w-12, w-12, 186, 24, color.RGBA{0, 0, 0, 120})
+	// The tile: black, lighter along the top, rimmed with a hairline so
+	// that it reads on a dark desktop.
+	fill(img, squircle(x0, y0, w, w), image.NewUniform(color.NRGBA{255, 255, 255, 34}))
+	fill(img, squircle(x0+3, y0+3, w-6, w-6), gradient{y0: y0, y1: y0 + w, stops: []stop{
+		{0, rgb(0x22262e)},
+		{0.45, rgb(0x11141a)},
+		{1, rgb(0x06070a)},
+	}})
+	// The terminal: a dark window with a grey rim.
+	px, py, pw, ph := x0+120, y0+140, w-240, w-280
+	shadow(img, px, py+12, pw, ph, 54, 26, color.RGBA{0, 0, 0, 150})
+	fill(img, rounded(px, py, pw, ph, 54), image.NewUniform(rgb(0x394150)))
+	fill(img, rounded(px+4, py+4, pw-8, ph-8, 50), gradient{y0: py, y1: py + ph, stops: []stop{
+		{0, rgb(0x171b22)},
+		{1, rgb(0x0a0c10)},
+	}})
+	// The window's controls, in the colors of a title bar.
+	for i, c := range [3]color.NRGBA{rgb(0xff5f57), rgb(0xfebc2e), rgb(0x28c840)} {
+		fill(img, disc(px+62+float32(i)*46, py+48, 14), image.NewUniform(c))
 	}
-	for _, c := range cards {
-		shadow(img, c.x, c.y+8, c.w, c.h, 44, 22, color.RGBA{80, 40, 60, 40})
-		fill(img, rounded(c.x, c.y, c.w, c.h, 44), image.NewUniform(color.NRGBA{255, 255, 255, c.a}))
-	}
-	// A prompt on the first pane: a chevron and a cursor.
-	c := cards[0]
-	ink := image.NewUniform(color.NRGBA{42, 45, 49, 255})
-	green := image.NewUniform(color.NRGBA{78, 142, 95, 255})
-	cx, cy := c.x+68, c.y+c.h/2-6
-	for _, r := range stroke([][2]float32{{cx, cy - 58}, {cx + 62, cy}, {cx, cy + 58}}, 26) {
+	// The prompt: a chevron, a cursor, and two lines of output below.
+	cy := py + 268
+	green := image.NewUniform(rgb(0x3ee68f))
+	for _, r := range stroke([][2]float32{{px + 108, cy - 104}, {px + 228, cy}, {px + 108, cy + 104}}, 52) {
 		fill(img, r, green)
 	}
-	fill(img, rounded(cx+100, cy+34, 104, 26, 13), ink)
-	// Snake dots on the right pane.
-	r := cards[2]
-	for i := 0; i < 4; i++ {
-		fill(img, rounded(r.x+52+float32(i)*44, r.y+r.h*0.42, 30, 30, 7), image.NewUniform(color.NRGBA{86, 141, 102, 255}))
-	}
-	fill(img, rounded(r.x+52+3*44, r.y+r.h*0.42+44, 30, 30, 7), image.NewUniform(color.NRGBA{86, 141, 102, 255}))
-	fill(img, rounded(r.x+r.w-100, r.y+r.h*0.7, 34, 34, 17), image.NewUniform(color.NRGBA{188, 83, 98, 255}))
-	// Lines of text on the lower left pane.
-	l := cards[1]
-	for i, lw := range []float32{0.62, 0.44, 0.7} {
-		col := color.NRGBA{120, 120, 128, 150}
-		if i == 1 {
-			col = color.NRGBA{194, 70, 90, 170}
-		}
-		fill(img, rounded(l.x+52, l.y+56+float32(i)*48, (l.w-104)*lw, 22, 11), image.NewUniform(col))
-	}
+	fill(img, rounded(px+272, cy-30, 172, 60, 12), image.NewUniform(rgb(0x5ad2ff)))
+	fill(img, rounded(px+108, cy+140, pw*0.44, 22, 11), image.NewUniform(color.NRGBA{0x4a, 0x53, 0x61, 255}))
+	fill(img, rounded(px+108, cy+186, pw*0.28, 22, 11), image.NewUniform(color.NRGBA{0x32, 0x39, 0x45, 255}))
 	if err := os.MkdirAll("resources", 0o755); err != nil {
 		log.Fatal(err)
 	}
@@ -89,29 +74,28 @@ type stop struct {
 	c  color.NRGBA
 }
 
-// gradient is a vertical gradient through stops.
-func gradient(h int, stops []stop) image.Image {
-	img := image.NewNRGBA(image.Rect(0, 0, 1, h))
-	for y := 0; y < h; y++ {
-		t := float64(y) / float64(h-1)
-		i := 0
-		for i < len(stops)-2 && t > stops[i+1].at {
-			i++
-		}
-		a, b := stops[i], stops[i+1]
-		f := math.Max(0, math.Min(1, (t-a.at)/(b.at-a.at)))
-		mix := func(p, q uint8) uint8 { return uint8(float64(p) + (float64(q)-float64(p))*f + 0.5) }
-		img.SetNRGBA(0, y, color.NRGBA{mix(a.c.R, b.c.R), mix(a.c.G, b.c.G), mix(a.c.B, b.c.B), 255})
-	}
-	return &stretch{img}
+// gradient is a vertical gradient from y0 to y1 through stops, clamped
+// outside the range.
+type gradient struct {
+	y0, y1 float32
+	stops  []stop
 }
 
-// stretch repeats a one-pixel-wide image across.
-type stretch struct{ *image.NRGBA }
+func (g gradient) Bounds() image.Rectangle { return image.Rect(0, 0, size, size) }
+func (g gradient) ColorModel() color.Model { return color.NRGBAModel }
 
-func (s *stretch) Bounds() image.Rectangle { return image.Rect(0, 0, size, size) }
-func (s *stretch) At(x, y int) color.Color { return s.NRGBA.At(0, y) }
-func (s *stretch) ColorModel() color.Model { return color.NRGBAModel }
+func (g gradient) At(x, y int) color.Color {
+	t := (float64(y) - float64(g.y0)) / (float64(g.y1) - float64(g.y0))
+	t = math.Max(0, math.Min(1, t))
+	i := 0
+	for i < len(g.stops)-2 && t > g.stops[i+1].at {
+		i++
+	}
+	a, b := g.stops[i], g.stops[i+1]
+	f := (t - a.at) / (b.at - a.at)
+	mix := func(p, q uint8) uint8 { return uint8(float64(p) + (float64(q)-float64(p))*f + 0.5) }
+	return color.NRGBA{mix(a.c.R, b.c.R), mix(a.c.G, b.c.G), mix(a.c.B, b.c.B), 255}
+}
 
 func fill(dst *image.RGBA, r *vector.Rasterizer, src image.Image) {
 	r.Draw(dst, dst.Bounds(), src, image.Point{})
@@ -136,7 +120,7 @@ func rounded(x, y, w, h, rad float32) *vector.Rasterizer {
 
 // squircle is a rounded rectangle of continuous curvature, as macOS's
 // icons: a superellipse.
-func squircle(x, y, w, h, _ float32) *vector.Rasterizer {
+func squircle(x, y, w, h float32) *vector.Rasterizer {
 	r := vector.NewRasterizer(size, size)
 	const n = 5.0
 	cx, cy, a, b := float64(x+w/2), float64(y+h/2), float64(w/2), float64(h/2)
@@ -152,6 +136,13 @@ func squircle(x, y, w, h, _ float32) *vector.Rasterizer {
 		}
 	}
 	r.ClosePath()
+	return r
+}
+
+// disc is a circle.
+func disc(cx, cy, rad float32) *vector.Rasterizer {
+	r := vector.NewRasterizer(size, size)
+	circle(r, cx, cy, rad)
 	return r
 }
 
