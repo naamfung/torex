@@ -47,6 +47,7 @@ func main() {
 	}
 	if !mygo.IsDev() {
 		installMenu()
+		prepareInstall()
 	}
 	// One window runs: another launch hands it its folder, and shows it.
 	release, held := holdWindow()

@@ -66,7 +66,7 @@ torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数�
 
 shell 没有 ssh，所以运行时自带一个：用 Go 写的客户端（`cmd/ssh`，由 `tools/mkssh` 构建为 `bin/ssh.exe`），用 `~/.ssh` 里的密钥或密码登录，按 `~/.ssh/known_hosts` 校验主机，并在与窗格同尺寸的终端里运行 shell。它不读 `~/.ssh/config`，不使用 agent，也没有端口转发。
 
-torex 所在的安装目录也参与运行时，`$TOREX_HOME` 指向它：`bin` 排在 `PATH` 最前，放用户自己的程序；`etc/profile` 在内置 profile 之后加载，适合配置环境变量；`share` 不自动搜索，独立程序包放那里，由 `$TOREX_HOME/etc/profile` 自行指向。这样不必改仓库或重编，也能给每个窗格加上自己的工具与环境。
+torex 所在的安装目录也参与运行时，`$TOREX_HOME` 指向它：`bin` 排在 `PATH` 最前，放用户自己的程序；`etc/profile` 在内置 profile 之后加载，适合配置环境变量；`share` 不自动搜索，独立程序包放那里，由 `$TOREX_HOME/etc/profile` 自行指向。这样不必改仓库或重编，也能给每个窗格加上自己的工具与环境。首次启动会在 `bin` 与 `etc` 各留一份带注释的说明（`README.txt` 与 `profile`），之后不再覆盖，随你修改。
 
 Windows 上 torex 每次启动都会把「在此目录启动 torex」写进资源管理器的右键菜单（`HKCU\Software\Classes\Directory` 与 `Directory\Background` 下的 `torex` 键），这样在任意文件夹或其空白处都能启动，并在该目录开一个标签页。窗口只运行一个：再次启动时，新进程把目录交给已在运行的窗口（`%TOREX_DIR%\open` 下的请求）后退出。`torex -uninstall` 移除该菜单项；卸载程序不会动它，卸载后需要手动运行一次。
 
