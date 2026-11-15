@@ -307,9 +307,15 @@ func winkitShell(path, dir string) (busybox string, argv, env []string, ok bool)
 	if st, err := os.Stat(busybox); err != nil || st.IsDir() {
 		return "", nil, nil, false
 	}
+	// The home of the shell is the Windows user's own, as ~ means to other
+	// programs: their keys, their vimrc, and their caches are there to find.
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = root
+	}
 	env = []string{
 		"WINKIT_HOME=" + root,
-		"HOME=" + winkitHome(root),
+		"HOME=" + home,
 		"PATH=" + bin + ";" + os.Getenv("PATH"),
 	}
 	// A WinKit installation keeps the settings of the programs it runs in
@@ -329,39 +335,6 @@ func winkitShellName(name string) bool {
 		return true
 	}
 	return false
-}
-
-// winkitHome returns the $HOME winkit.ini names, or root\root: the
-// directory of the profile that a login shell runs.
-func winkitHome(root string) string {
-	home := filepath.Join(root, "root")
-	b, err := os.ReadFile(filepath.Join(root, "winkit.ini"))
-	if err != nil {
-		return home
-	}
-	inWinkit := false
-	for _, line := range strings.Split(string(b), "\n") {
-		line = strings.TrimSpace(strings.TrimSuffix(line, "\r"))
-		if line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if strings.HasPrefix(line, "[") {
-			inWinkit = strings.EqualFold(strings.Trim(line, "[] "), "winkit")
-			continue
-		}
-		if !inWinkit {
-			continue
-		}
-		if k, v, ok := strings.Cut(line, "="); ok && strings.EqualFold(strings.TrimSpace(k), "home") {
-			if v = strings.TrimSpace(v); v != "" {
-				if !filepath.IsAbs(v) {
-					v = filepath.Join(root, v)
-				}
-				return filepath.Clean(v)
-			}
-		}
-	}
-	return home
 }
 
 // processAlive reports whether a process runs.

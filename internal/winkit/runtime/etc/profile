@@ -34,16 +34,18 @@ case $- in
 		PROMPT_SIGN='$'
 	fi
 	prompt_nl() {
-		if [ -e "$HOME/.torex-prompt-$TOREX_PROMPT_ID" ]; then
+		if [ -e "$PROMPT_MARK" ]; then
 			# The reset keeps the newline from being a trailing one, which
 			# a command substitution takes away.
 			printf '\n\033[0m'
 		else
-			: > "$HOME/.torex-prompt-$TOREX_PROMPT_ID"
+			: > "$PROMPT_MARK"
 		fi
 	}
-	TOREX_PROMPT_ID=$$
-	trap 'rm -f "$HOME/.torex-prompt-$TOREX_PROMPT_ID"' 0
+	# The mark is of this login shell, in the temporary directory rather than
+	# the user's home, which is theirs.
+	PROMPT_MARK=/tmp/.torex-prompt-$$
+	trap 'rm -f "$PROMPT_MARK"' 0
 	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
 	;;
 esac
