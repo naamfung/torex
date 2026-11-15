@@ -50,3 +50,9 @@ case $- in
 	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
 	;;
 esac
+
+# The profile of the installation, $TOREX_HOME/etc/profile, runs after this
+# one: its owner's environment, and where the share directory may be.
+if [ -n "$TOREX_HOME" ] && [ -f "$TOREX_HOME/etc/profile" ]; then
+	. "$TOREX_HOME/etc/profile"
+fi

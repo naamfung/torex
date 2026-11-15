@@ -316,8 +316,16 @@ func winkitShell(path, dir string) (busybox string, argv, env []string, ok bool)
 	env = []string{
 		"WINKIT_HOME=" + root,
 		"HOME=" + home,
-		"PATH=" + bin + ";" + os.Getenv("PATH"),
 	}
+	// The directory torex runs from holds what its owner adds: bin is
+	// searched before the runtime's, and etc/profile runs after it.
+	search := []string{bin}
+	if exe, err := os.Executable(); err == nil {
+		install := filepath.Dir(exe)
+		search = append([]string{filepath.Join(install, "bin")}, search...)
+		env = append(env, "TOREX_HOME="+install)
+	}
+	env = append(env, "PATH="+strings.Join(search, ";")+";"+os.Getenv("PATH"))
 	// A WinKit installation keeps the settings of the programs it runs in
 	// its share directory; torex's own runtime leaves them to Windows.
 	if st, err := os.Stat(filepath.Join(root, "share")); err == nil && st.IsDir() {
