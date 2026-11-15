@@ -1,6 +1,6 @@
 {
-  "name": "GoRex",
-  "identifier": "dev.gorex.app",
+  "name": "Torex",
+  "identifier": "dev.torex.app",
   "version": "0.1.0",
   "copyright": "A replica of Superlogical's Rex, built with MyGo",
   "out": "build",

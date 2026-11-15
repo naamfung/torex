@@ -1,151 +1,86 @@
-# GoRex
+# torex
 
-A replica of [Superlogical's Rex](https://www.superlogical.com/updates/public-testing-beginning)
-terminal, written in Go with [MyGo](https://mygo.egoist.dev)'s native UI and its
-terminal plugin (Ghostty's libghostty-vt). No webview, no cgo: one ~15 MB app.
+用 Go 实现、基于 [MyGo](https://mygo.egoist.dev) 原生 UI 及其终端插件（Ghostty 的 libghostty-vt）的 [Superlogical Rex](https://www.superlogical.com/updates/public-testing-beginning) 终端复刻。无 webview、无 cgo：一个应用（Windows 版因内嵌运行时约 54 MB）。
 
-![GoRex](docs/screenshot.png)
+![torex](docs/screenshot.png)
 
-## What it does
+## 功能
 
-- **Tabs and split panes.** A pane alone in its tab is a card over the
-  window's gradient, its terminal filling it; its header, with its
-  program's icon, name and directory and buttons to split, zoom and close,
-  comes over the terminal's top as the pointer does. Splitting keeps a
-  header on every pane. Drag the gaps between panes to resize them
-  (double-click resets a split to half).
-- **Persistent sessions.** Shells run in a session server, a background
-  process of the same binary (`GoRex -server`). Quit GoRex and everything
-  keeps running; open it again and every tab, split and pane comes back as
-  it was, programs still running. The server keeps each session's screen in
-  a headless libghostty-vt emulator and sends a snapshot on attach, so
-  full-screen programs (lazygit, vim, htop…) come back exactly.
-- **Program activity.** The server watches each terminal's foreground
-  process (`tcgetpgrp`, `sysctl`, `proc_pidinfo`; on Windows, the shell's
-  newest child, its command line and directory): headers and tabs name the
-  program (`Node`, `Git Changes` for lazygit, `Codex`, `SSH host`…) and its
-  working directory, a green dot shows a program printing, and an orange dot
-  marks a pane whose program finished or rang the bell out of sight. When
-  the window is in the background, a long command finishing posts a
-  notification.
-- **Tab icons** stack the tiles of a tab's programs, the focused pane's in
-  front, as Rex does. Tabs reorder by dragging, rename by double-click, and
-  have a context menu.
-- **Host chip** with the machine's name and model; its popover shows the
-  chip, memory, OS and the session server.
-- **Command palette** (⇧⌘P, Ctrl+Shift+P, or the ⌘ button): every command, and every pane
-  to jump to, fuzzy-matched.
-- Light and dark appearances (View ▸ Appearance), text size (⌘+ ⌘− ⌘0),
-  JetBrains Mono embedded.
+- **标签页与分屏窗格。** 独占一个标签页的窗格是一张浮在窗口渐变之上的卡片，终端铺满其中；指针移到顶部时，它的头部（程序图标、名称、目录，以及分屏、缩放、关闭按钮）浮现在终端上方。分屏后每个窗格都有自己的头部。拖动窗格之间的间隙可调整大小（双击把分屏重置为对半）。
+- **持久会话。** shell 跑在会话服务器里——同一个二进制的后台进程（`torex -server`）。退出 torex 后一切照常运行；再打开时，每个标签页、分屏、窗格都按原样回来，程序仍在运行。服务器把每个会话的画面保存在无头的 libghostty-vt 模拟器中，附加时发送快照，因此全屏程序（lazygit、vim、htop……）能原封不动地恢复。
+- **程序活动。** 服务器观察每个终端的前台进程（`tcgetpgrp`、`sysctl`、`proc_pidinfo`；Windows 上则是 shell 最新的子进程及其命令行与目录）：头部和标签页显示程序名（`Node`、lazygit 显示为 `Git Changes`、`Codex`、`SSH host`……）及其工作目录；绿点表示程序正在输出，橙点表示窗格里的程序已结束或在不被注意时响铃。窗口在后台时，长命令结束会发通知。
+- **标签页图标**把该标签页各程序的色块叠起来（聚焦窗格的在最前），与 Rex 一致。标签页可拖动排序、双击重命名，并有右键菜单。
+- **主机信息条**显示机器名与型号；点开的浮层里有芯片、内存、操作系统与会话服务器。
+- **命令面板**（⇧⌘P、Ctrl+Shift+P 或 ⌘ 按钮）：所有命令与所有窗格，模糊匹配。
+- 浅色与深色外观（查看 ▸ 外观）、字号（⌘+ ⌘− ⌘0），内嵌 JetBrains Mono。
 
-## Shortcuts
+## 快捷键
 
-| macOS | Windows, Linux | |
+| macOS | Windows、Linux | |
 |---|---|---|
-| ⌘T | Ctrl+Shift+T | New tab |
-| ⌘D / ⇧⌘D | Ctrl+Shift+D / Ctrl+Shift+E | Split right / down |
-| ⌘W / ⇧⌘W | Ctrl+Shift+W | Close pane / tab |
-| ⇧⌘↩ | Ctrl+Shift+Enter | Zoom the pane |
-| ⌥⌘ arrows | Alt+arrows | Focus the pane in that direction |
-| ⌃⌘ arrows | Alt+Shift+arrows | Move the nearest divider |
-| ⌃⌘= | | Equalize panes |
-| ⌘1…⌘9, ⇧⌘[ ⇧⌘], ⌃Tab | Ctrl+Shift+1…9, Ctrl+PageUp/PageDown, Ctrl+Tab | Switch tabs |
-| ⇧⌘R | Ctrl+Shift+R | Rename tab |
-| ⇧⌘P, ⌘P | Ctrl+Shift+P | Command palette |
-| ⌘K | Ctrl+Shift+K | Clear |
-| ⌘+ ⌘− ⌘0 | Ctrl+= Ctrl+- Ctrl+0 | Text size |
-| ⌥⌘Q | | Quit and end all sessions |
+| ⌘T | Ctrl+Shift+T | 新建标签页 |
+| ⌘D / ⇧⌘D | Ctrl+Shift+D / Ctrl+Shift+E | 向右 / 向下分屏 |
+| ⌘W / ⇧⌘W | Ctrl+Shift+W | 关闭窗格 / 标签页 |
+| ⇧⌘↩ | Ctrl+Shift+Enter | 缩放窗格 |
+| ⌥⌘ 方向键 | Alt+方向键 | 聚焦该方向的窗格 |
+| ⌃⌘ 方向键 | Alt+Shift+方向键 | 移动最近的分隔线 |
+| ⌃⌘= | | 均分窗格 |
+| ⌘1…⌘9、⇧⌘[ ⇧⌘]、⌃Tab | Ctrl+Shift+1…9、Ctrl+PageUp/PageDown、Ctrl+Tab | 切换标签页 |
+| ⇧⌘R | Ctrl+Shift+R | 重命名标签页 |
+| ⇧⌘P、⌘P | Ctrl+Shift+P | 命令面板 |
+| ⌘K | Ctrl+Shift+K | 清屏 |
+| ⌘+ ⌘− ⌘0 | Ctrl+= Ctrl+- Ctrl+0 | 字号 |
+| ⌥⌘Q | | 退出并结束所有会话 |
 
-Elsewhere than on macOS, Control and a letter are the terminal's (Ctrl+C,
-Ctrl+D, Ctrl+W…), so GoRex's shortcuts take Shift too, as copying and
-pasting do (Ctrl+Shift+C, Ctrl+Shift+V), and none take Control and Alt,
-which type characters (AltGr) on many keyboards.
+在 macOS 之外的平台，Control+字母属于终端（Ctrl+C、Ctrl+D、Ctrl+W……），所以 torex 的快捷键都带 Shift，复制粘贴亦然（Ctrl+Shift+C、Ctrl+Shift+V）；也没有任何快捷键占用 Control+Alt，因为在很多键盘上那是用来打字符的（AltGr）。
 
-## Develop and build
+## 开发与构建
 
-GoRex needs [Go](https://go.dev/dl/) 1.27+ and MyGo 0.3.0, whose CLI
-`go.mod` pins as a tool:
+torex 需要 [Go](https://go.dev/dl/) 1.27+ 与 MyGo 0.3.0，其 CLI 由 `go.mod` 以 tool 形式固定：
 
 ```sh
-go tool mygo dev     # GoRex Dev, rebuilt and restarted as the code changes
-go test ./...        # the server, and the view without a window
-go tool mygo build   # build/darwin-arm64/GoRex.app and a .dmg
-go run ./tools/mkbusybox       # build WinKit's shell from source, with zig
-go run ./tools/mkbusybox -app  # Windows: the shell, then GoRex
-go run ./tools/mkvim           # build vim from source, with zig
-go run ./tools/mkvim -app      # Windows: vim, then GoRex
-go run ./tools/mkssh           # build the runtime's ssh client
-go run ./tools/mkssh -app      # Windows: ssh, then GoRex
-go run ./tools/mkicon  # redraw resources/icon.png
+go tool mygo dev     # Torex Dev，随代码改动重建并重启
+go test ./...        # 会话服务器，以及无窗口的视图
+go tool mygo build   # build/darwin-arm64/Torex.app 与 .dmg
+go run ./tools/mkbusybox       # 用 zig 从源码构建 WinKit 的 shell
+go run ./tools/mkbusybox -app  # Windows：先 shell，再 torex
+go run ./tools/mkvim           # 用 zig 从源码构建 vim
+go run ./tools/mkvim -app      # Windows：先 vim，再 torex
+go run ./tools/mkssh           # 构建运行时的 ssh 客户端
+go run ./tools/mkssh -app      # Windows：先 ssh，再 torex
+go run ./tools/mkicon  # 重绘 resources/icon.png
 ```
 
-`go get -tool github.com/egoist/mygo/cmd/mygo@latest` updates MyGo and its
-CLI together.
+`go get -tool github.com/egoist/mygo/cmd/mygo@latest` 会一并更新 MyGo 与其 CLI。
 
-The app keeps its state in its data directory: the server's socket and
-log, `layout.json` and `settings.json`, in `~/Library/Application
-Support/GoRex` for the built app and `GoRex Dev` for `mygo dev`'s, so
-that developing never touches the sessions of the app you use
-(`GOREX_DIR` names another directory). The sessions outlive the app, but
-not a rebuild: a development build replaces a server that an older build
-started, ending its sessions, which then start again in the same
-directories.
+应用把状态保存在自己的数据目录：服务器的套接字与日志、`layout.json` 和 `settings.json`；正式版在 `~/Library/Application Support/Torex`，`mygo dev` 的在 `Torex Dev`，所以开发永远不会碰到你在用的那份应用的会话（`TOREX_DIR` 可指定别的目录）。会话比应用活得久，但撑不过一次重建：开发版会替换旧版启动的服务器，结束其会话，随后这些会话在原目录重新启动。
 
 ### Windows
 
-GoRex runs on Windows 10 1809 or later, whose ConPTY runs the shells; its
-data directory is `%AppData%\GoRex`. Panes run WinKit's POSIX shell — its
-`busybox` as `sh`, built from source and embedded in GoRex, unpacked under
-the data directory — and no shell of Windows: no PowerShell, no `cmd`, so
-that every pane behaves alike, whatever the machine has installed. Its
-login shell sets WinKit's environment and its prompt: `root@…` when the
-window is elevated, else the Windows user. The window is frameless and its
-title bar draws minimize, maximize and close with the other buttons; it
-resizes from its sides and bottom, not its top.
+torex 运行于 Windows 10 1809 或更高版本，由 ConPTY 承载 shell；数据目录是 `%AppData%\Torex`。窗格跑的是 WinKit 的 POSIX shell——把它的 `busybox` 当作 `sh`，从源码构建并内嵌进 torex，运行时解包到数据目录下——不使用 Windows 的任何 shell：没有 PowerShell，没有 `cmd`，这样无论机器上装了什么，每个窗格的行为都一致。登录 shell 会设置 WinKit 的环境与提示符：窗口提权时是 `root@…`，否则是 Windows 用户名。窗口无边框，标题栏用这些按钮画出最小化、最大化与关闭；只能从两侧和底部调整大小，不能从顶部。
 
-`internal/winkit` carries the runtime embedded in the app: WinKit's
-`busybox.exe` as `sh`, with `winkit.ini` and the profiles a login shell
-reads. `third_party/winkit` has WinKit's source (MIT) and the busybox-w32
-source tarball, whose checksum `tools/mkbusybox` verifies; the tool applies
-WinKit's patches and builds the shell with zig, as WinKit's Dockerfile does.
-`go run ./tools/mkbusybox -app` builds the shell and then GoRex, in Go;
-`go build` and `go tool mygo build` embed the shell that
-`internal/winkit/runtime` has, and a new one is unpacked under the data
-directory by its checksum. Building the shell needs zig, a `make`, and Git
-(its POSIX shell runs make's recipes, and `git apply` applies the patches);
-`tools/mkbusybox` finds WinKit's zig and make in `%WINKIT_HOME%` too.
+`internal/winkit` 承载内嵌进应用的运行时：WinKit 的 `busybox.exe`（作为 `sh`），连同 `winkit.ini` 与登录 shell 会读的 profile。`third_party/winkit` 有 WinKit 的源码（MIT）与 busybox-w32 源码包，`tools/mkbusybox` 会校验其校验和；该工具像 WinKit 的 Dockerfile 那样打上补丁并用 zig 构建 shell。`go run ./tools/mkbusybox -app` 用 Go 先构建 shell、再构建 torex；`go build` 与 `go tool mygo build` 内嵌 `internal/winkit/runtime` 里的 shell，新的一份按校验和解包到数据目录下。构建 shell 需要 zig、`make` 和 Git（Git 的 POSIX shell 用来跑 make 的配方，`git apply` 用来打补丁）；`tools/mkbusybox` 也会到 `%WINKIT_HOME%` 里找 WinKit 的 zig 与 make。
 
-The runtime carries vim as its editor: the console `vim.exe` and its runtime
-files, embedded and unpacked beside the shell. `$VIMRUNTIME` names them, and
-its `vimrc` — the system vimrc vim has no other way on Windows — gives vim
-the defaults and the POSIX shell of the runtime, so a filter or `:!` runs in
-`sh`, not `cmd`. `third_party/vim` has the source tarball and that `vimrc`;
-`tools/mkvim` verifies the checksum, builds `vim.exe` with zig and windres
-(of `%WINKIT_HOME%`), and copies the editor and its runtime into
-`internal/winkit/runtime`. `vi` is an alias of `vim`.
+运行时还带有作为编辑器的 vim：控制台版 `vim.exe` 及其运行时文件，一并内嵌并在 shell 旁边解包。`$VIMRUNTIME` 指向这些文件，其中的 `vimrc`——Windows 上的 vim 没有别的系统 vimrc 入口——为 vim 提供默认设置和运行时的 POSIX shell，于是过滤器或 `:!` 走的是 `sh` 而不是 `cmd`。`third_party/vim` 有源码包与这个 `vimrc`；`tools/mkvim` 校验校验和，用 zig 与 windres（来自 `%WINKIT_HOME%`）构建 `vim.exe`，再把编辑器和它的运行时复制进 `internal/winkit/runtime`。`vi` 是 `vim` 的别名。
 
-The shell has no ssh, so the runtime carries one: a client written in Go
-(`cmd/ssh`, built by `tools/mkssh` into `bin/ssh.exe`) that logs in with the
-keys of `~/.ssh` or a password, checks hosts against `~/.ssh/known_hosts`,
-and runs a shell in a terminal of the pane's size. It does not read
-`~/.ssh/config`, nor use an agent, and has no port forwarding.
+shell 没有 ssh，所以运行时自带一个：用 Go 写的客户端（`cmd/ssh`，由 `tools/mkssh` 构建为 `bin/ssh.exe`），用 `~/.ssh` 里的密钥或密码登录，按 `~/.ssh/known_hosts` 校验主机，并在与窗格同尺寸的终端里运行 shell。它不读 `~/.ssh/config`，不使用 agent，也没有端口转发。
 
-## Layout
+Windows 上 torex 每次启动都会把「在此目录启动 torex」写进资源管理器的右键菜单（`HKCU\Software\Classes\Directory` 与 `Directory\Background` 下的 `torex` 键），这样在任意文件夹或其空白处都能启动，并在该目录开一个标签页。窗口只运行一个：再次启动时，新进程把目录交给已在运行的窗口（`%TOREX_DIR%\open` 下的请求）后退出。`torex -uninstall` 移除该菜单项；卸载程序不会动它，卸载后需要手动运行一次。
+
+## 代码结构
 
 | | |
 |---|---|
-| `main.go` | the app, its window, and `-server` |
-| `state.go` | tabs, the tree of splits, panes, saving and restoring the layout |
-| `view.go`, `tabs.go`, `host.go`, `commands.go` | the interface: title bar, tabs, panes, host popover, menus and palette |
-| `programs.go` | how programs show: names, glyphs, tile colors |
-| `style.go`, `settings.go` | colors, fonts, terminal themes; appearance and text size |
-| `internal/rex` | the session server and its client: PTYs, foreground processes, headless screens, the socket protocol |
-| `internal/winkit` | the WinKit runtime embedded in the app, and its unpacking; source in `third_party/winkit` |
-| `cmd/ssh`, `tools/mkssh` | the ssh client of that runtime, and building it into it |
-| `tools/mkbusybox`, `tools/mkvim`, `tools/zigcc` | building that runtime from WinKit's busybox-w32 and vim's source with zig |
+| `main.go` | 应用、它的窗口，以及 `-server` |
+| `state.go` | 标签页、分屏树、窗格，布局的保存与恢复 |
+| `view.go`、`tabs.go`、`host.go`、`commands.go` | 界面：标题栏、标签页、窗格、主机浮层、菜单与命令面板 |
+| `programs.go` | 程序的呈现方式：名称、图标、色块颜色 |
+| `style.go`、`settings.go` | 颜色、字体、终端主题；外观与字号 |
+| `internal/rex` | 会话服务器及其客户端：PTY、前台进程、无头画面、套接字协议 |
+| `internal/winkit` | 内嵌进应用的 WinKit 运行时，及其解包；源码在 `third_party/winkit` |
+| `cmd/ssh`、`tools/mkssh` | 该运行时的 ssh 客户端，以及把它构建进去 |
+| `tools/mkbusybox`、`tools/mkvim`、`tools/zigcc` | 用 zig 从 WinKit 的 busybox-w32 与 vim 源码构建该运行时 |
 
-Not replicated: Rex's connections to servers on other machines; GoRex's
-server listens on a local socket only.
+未复刻：Rex 连接其他机器上服务器的能力；torex 的服务器只监听本地套接字。
 
-Icons: [Lucide](https://lucide.dev) (ISC) and [Simple Icons](https://simpleicons.org)
-(CC0). Font: [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL).
+图标：[Lucide](https://lucide.dev)（ISC）与 [Simple Icons](https://simpleicons.org)（CC0）。字体：[JetBrains Mono](https://www.jetbrains.com/lp/mono/)（OFL）。

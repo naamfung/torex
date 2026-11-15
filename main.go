@@ -1,4 +1,4 @@
-// GoRex is a terminal of tabs and split panes, after Superlogical's Rex,
+// torex is a terminal of tabs and split panes, after Superlogical's Rex,
 // in MyGo's native UI. Its shells run in a session server of their own,
 // so that they outlive the app: quit it, open it again, and every tab and
 // pane is back as it was, its programs still running.
@@ -17,7 +17,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"gorex/internal/rex"
+	"torex/internal/rex"
 )
 
 func main() {
@@ -30,17 +30,34 @@ func main() {
 		}
 		return
 	}
+	// -uninstall removes the entry of Explorer's context menu.
+	if len(os.Args) > 1 && os.Args[1] == "-uninstall" {
+		uninstallMenu()
+		return
+	}
+	// A folder argument is the one Explorer hands the context menu.
+	dir := folderArg(os.Args[1:])
 	// The state of the sessions lives in the app's data directory, which
-	// the server it starts takes from GOREX_DIR: "GoRex", or "GoRex Dev"
+	// the server it starts takes from TOREX_DIR: "torex", or "torex Dev"
 	// under mygo dev, which keeps the installed app's sessions apart.
-	if os.Getenv("GOREX_DIR") == "" {
+	if os.Getenv("TOREX_DIR") == "" {
 		if dir, err := mygo.App.Path(mygo.PathUserData); err == nil {
-			os.Setenv("GOREX_DIR", dir)
+			os.Setenv("TOREX_DIR", dir)
 		}
 	}
+	if !mygo.IsDev() {
+		installMenu()
+	}
+	// One window runs: another launch hands it its folder, and shows it.
+	release, held := holdWindow()
+	if !held {
+		requestOpen(dir)
+		return
+	}
+	defer release()
 	registerFonts()
 	loadSettings()
-	a := &App{}
+	a := &App{startDir: dir}
 	mygo.App.SetMenu(a.menu())
 	mygo.App.WhenReady(a.open)
 	mygo.App.OnActivate(func(hasVisibleWindows bool) {
@@ -66,7 +83,7 @@ func (a *App) open() {
 	client, err := rex.Connect()
 	if err != nil {
 		log.Print(err)
-		mygo.Dialog.Error("GoRex could not start its session server", err.Error())
+		mygo.Dialog.Error("torex could not start its session server", err.Error())
 		mygo.App.Quit()
 		return
 	}
@@ -80,17 +97,17 @@ func (a *App) open() {
 			a.hello, err = client.Hello()
 		} else {
 			log.Print(err)
-			mygo.Dialog.Error("GoRex could not restart its session server", err.Error())
+			mygo.Dialog.Error("torex could not restart its session server", err.Error())
 			mygo.App.Quit()
 			return
 		}
 	}
 	if err == nil && a.hello.Version != rex.ProtocolVersion {
-		a.err = "The session server is of another version of GoRex: quit and end all sessions to restart it."
+		a.err = "The session server is of another version of torex: quit and end all sessions to restart it."
 	}
 	a.reset()
 	opts := mygo.WindowOptions{
-		Title:                "GoRex",
+		Title:                "torex",
 		Width:                1000,
 		Height:               620,
 		MinWidth:             560,
@@ -107,9 +124,20 @@ func (a *App) open() {
 	}
 	win := mygo.NewWindow(opts)
 	a.win = win
-	if !a.restore() {
+	// The folders to open: this launch's, and those of launches while
+	// another window ran.
+	opens := takeOpen()
+	if a.startDir != "" {
+		opens = append(opens, a.startDir)
+	}
+	if !a.restore() && len(opens) == 0 {
 		home, _ := os.UserHomeDir()
 		a.newTab(home)
+	}
+	for _, dir := range opens {
+		if dir != "" {
+			a.newTab(dir)
+		}
 	}
 	a.changed()
 	go a.poll(win, client)

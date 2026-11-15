@@ -1,10 +1,10 @@
-// Command mkssh builds ssh, the ssh client of GoRex's Windows runtime, where
-// GoRex embeds it beside the shell: the runtime of a pane has no ssh of
+// Command mkssh builds ssh, the ssh client of torex's Windows runtime, where
+// torex embeds it beside the shell: the runtime of a pane has no ssh of
 // Windows, and this one comes with the app.
 //
 //	go run ./tools/mkssh
 //
-// With -app it builds GoRex after the program, as mkbusybox and mkvim do.
+// With -app it builds torex after the program, as mkbusybox and mkvim do.
 package main
 
 import (
@@ -19,7 +19,7 @@ import (
 const programPath = "internal/winkit/runtime/bin/ssh.exe"
 
 func main() {
-	app := flag.Bool("app", false, "build GoRex after the program")
+	app := flag.Bool("app", false, "build torex after the program")
 	flag.Parse()
 	root, err := moduleRoot()
 	if err != nil {
@@ -49,7 +49,7 @@ func main() {
 	}
 }
 
-// moduleRoot returns the directory of the go.mod of GoRex.
+// moduleRoot returns the directory of the go.mod of torex.
 func moduleRoot() (string, error) {
 	out, err := exec.Command("go", "env", "GOMOD").Output()
 	if err != nil {
@@ -57,7 +57,7 @@ func moduleRoot() (string, error) {
 	}
 	mod := strings.TrimSpace(string(out))
 	if mod == "" || mod == os.DevNull {
-		return "", fmt.Errorf("not in GoRex's module: run it from its directory")
+		return "", fmt.Errorf("not in torex's module: run it from its directory")
 	}
 	return filepath.Dir(mod), nil
 }

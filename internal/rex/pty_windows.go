@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"gorex/internal/winkit"
+	"torex/internal/winkit"
 )
 
 var (
@@ -252,7 +252,7 @@ func environmentBlock(env []string) []uint16 {
 // shellCommand returns the program, its arguments, the shell's name and
 // what its environment needs beyond the server's for a session in dir:
 // when cmd is empty, $SHELL when it names a program of Windows (not one
-// of MSYS's paths), else the shell of GoRex's own WinKit runtime, else
+// of MSYS's paths), else the shell of torex's own WinKit runtime, else
 // PowerShell, else the command interpreter. A shell of WinKit's runs as
 // its busybox's login shell, with WinKit's environment.
 func shellCommand(cmd []string, dir string) (path string, argv []string, name string, extraEnv []string, err error) {
@@ -270,7 +270,7 @@ func shellCommand(cmd []string, dir string) (path string, argv []string, name st
 	// whose panes all behave alike, whatever the machine has installed.
 	path = builtinShell()
 	if path == "" {
-		return "", nil, "", nil, errors.New("rex: GoRex could not unpack WinKit's shell")
+		return "", nil, "", nil, errors.New("rex: torex could not unpack WinKit's shell")
 	}
 	bb, wkArgv, env, ok := winkitShell(path, dir)
 	if !ok {
@@ -280,7 +280,7 @@ func shellCommand(cmd []string, dir string) (path string, argv []string, name st
 }
 
 // builtinShell returns the shell of the POSIX shell runtime embedded in
-// GoRex, unpacked in its data directory: empty when it cannot be.
+// torex, unpacked in its data directory: empty when it cannot be.
 func builtinShell() string {
 	sh, _ := winkit.Shell(filepath.Join(Dir(), "winkit"))
 	return sh
@@ -313,7 +313,7 @@ func winkitShell(path, dir string) (busybox string, argv, env []string, ok bool)
 		"PATH=" + bin + ";" + os.Getenv("PATH"),
 	}
 	// A WinKit installation keeps the settings of the programs it runs in
-	// its share directory; GoRex's own runtime leaves them to Windows.
+	// its share directory; torex's own runtime leaves them to Windows.
 	if st, err := os.Stat(filepath.Join(root, "share")); err == nil && st.IsDir() {
 		env = append(env, "APPDATA="+filepath.Join(root, "share"))
 	}

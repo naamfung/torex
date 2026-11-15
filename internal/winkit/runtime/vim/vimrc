@@ -1,4 +1,4 @@
-" GoRex's vim: the shell of this runtime is a POSIX one, not cmd.exe, and
+" torex's vim: the shell of this runtime is a POSIX one, not cmd.exe, and
 " the terminal of a pane speaks UTF-8.
 
 " Vim loads its defaults only when it finds no vimrc; this one is the system

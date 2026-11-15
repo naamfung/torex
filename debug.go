@@ -8,11 +8,11 @@ import (
 	"time"
 )
 
-// debugHook lets a script drive the app while GOREX_DEBUG names a
+// debugHook lets a script drive the app while TOREX_DEBUG names a
 // directory: each line of its file "do" is run, and "shot" captures the
 // window into shot.png.
 func (a *App) debugHook() {
-	dir := os.Getenv("GOREX_DEBUG")
+	dir := os.Getenv("TOREX_DEBUG")
 	if dir == "" {
 		return
 	}

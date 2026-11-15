@@ -1,4 +1,4 @@
-# GoRex's copy of WinKit's shell runtime: the POSIX shell's basics, and
+# torex's copy of WinKit's shell runtime: the POSIX shell's basics, and
 # the directory a pane opens in. A WinKit installation's own profile, with
 # the tools it adds, is $WINKIT_HOME/etc/profile of that installation.
 export PATH_SEPARATOR=';'
@@ -12,7 +12,7 @@ VIMRUNTIME="$WINKIT_HOME/vim"
 export VIMRUNTIME
 alias vi=vim
 
-# Check if we need to change directory after login: GoRex names the
+# Check if we need to change directory after login: torex names the
 # directory of the pane in CD_DIR.
 if [ -n "$CD_DIR" ]; then
 	cd "$CD_DIR"
@@ -34,16 +34,16 @@ case $- in
 		PROMPT_SIGN='$'
 	fi
 	prompt_nl() {
-		if [ -e "$HOME/.gorex-prompt-$GOREX_PROMPT_ID" ]; then
+		if [ -e "$HOME/.torex-prompt-$TOREX_PROMPT_ID" ]; then
 			# The reset keeps the newline from being a trailing one, which
 			# a command substitution takes away.
 			printf '\n\033[0m'
 		else
-			: > "$HOME/.gorex-prompt-$GOREX_PROMPT_ID"
+			: > "$HOME/.torex-prompt-$TOREX_PROMPT_ID"
 		fi
 	}
-	GOREX_PROMPT_ID=$$
-	trap 'rm -f "$HOME/.gorex-prompt-$GOREX_PROMPT_ID"' 0
+	TOREX_PROMPT_ID=$$
+	trap 'rm -f "$HOME/.torex-prompt-$TOREX_PROMPT_ID"' 0
 	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
 	;;
 esac

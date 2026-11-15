@@ -1,4 +1,4 @@
-module gorex
+module torex
 
 go 1.27.1
 

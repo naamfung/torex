@@ -1,4 +1,4 @@
-// Command ssh is the ssh client of GoRex's Windows runtime: a pane runs
+// Command ssh is the ssh client of torex's Windows runtime: a pane runs
 // WinKit's POSIX shell, which has no ssh of its own, so the app carries this
 // one, built from Go and embedded beside the shell.
 //

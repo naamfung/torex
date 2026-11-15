@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo"
 
-	"gorex/internal/rex"
+	"torex/internal/rex"
 )
 
 // settings are the user's choices, kept in settings.json beside the

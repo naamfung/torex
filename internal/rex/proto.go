@@ -1,4 +1,4 @@
-// Package rex is GoRex's session server and its client.
+// Package rex is torex's session server and its client.
 //
 // The server owns the pseudo-terminals: shells keep running when the app
 // quits, and the next launch attaches to them again, with what they printed
@@ -110,14 +110,14 @@ type Attach struct {
 
 // Dir returns the directory of the server's socket, log and state.
 func Dir() string {
-	if d := os.Getenv("GOREX_DIR"); d != "" {
+	if d := os.Getenv("TOREX_DIR"); d != "" {
 		return d
 	}
 	base, err := os.UserConfigDir()
 	if err != nil {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "GoRex")
+	return filepath.Join(base, "torex")
 }
 
 // SocketPath returns the path of the server's socket: in Dir, unless that
@@ -129,9 +129,9 @@ func SocketPath() string {
 	}
 	h := fnv.New32a()
 	h.Write([]byte(p))
-	name := fmt.Sprintf("gorex-%x.sock", h.Sum32())
+	name := fmt.Sprintf("torex-%x.sock", h.Sum32())
 	if uid := os.Getuid(); uid >= 0 { // Windows has none, and a temporary directory per user
-		name = fmt.Sprintf("gorex-%d-%x.sock", uid, h.Sum32())
+		name = fmt.Sprintf("torex-%d-%x.sock", uid, h.Sum32())
 	}
 	return filepath.Join(os.TempDir(), name)
 }

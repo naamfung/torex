@@ -1,4 +1,4 @@
-// Command zigcc is the C compiler of GoRex's WinKit runtime build: zig's
+// Command zigcc is the C compiler of torex's WinKit runtime build: zig's
 // compiler driver for Windows, with the depfile that kbuild's fixdep reads.
 //
 // A depfile names its target with a drive letter, as zig writes it from a

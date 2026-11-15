@@ -97,7 +97,7 @@ func (a *App) hostPanel(c *ui.Context, k *colors, name, glyph string) {
 		row("Server", fmt.Sprintf("pid %d · up %s", a.hello.PID, roundDur(time.Since(a.hello.Started))))
 		row("Sessions", fmt.Sprintf("%d open, %d running a program", sessions, running))
 	})
-	ui.Text(c, "Sessions live in the server: quit GoRex and they keep running, and come back as they were when it opens again.").
+	ui.Text(c, "Sessions live in the server: quit torex and they keep running, and come back as they were when it opens again.").
 		FontSize(11.5).TextColor(k.textFaint).LineHeight(1.35)
 }
 

@@ -1,5 +1,5 @@
 // Command mkvim builds vim, the editor of WinKit's runtime, from its source
-// with zig's compiler, and puts it where GoRex embeds it: the program with the
+// with zig's compiler, and puts it where torex embeds it: the program with the
 // runtime's files beside it.
 //
 // Vim's own Make_ming.mak drives the build, with tools of WinKit, MSYS2 or Git
@@ -8,7 +8,7 @@
 //
 //	go run ./tools/mkvim -zig C:\path\to\zig.exe -make C:\path\to\make.exe
 //
-// With -app it builds GoRex after the editor, with go tool mygo build.
+// With -app it builds torex after the editor, with go tool mygo build.
 package main
 
 import (
@@ -29,7 +29,7 @@ import (
 	"strings"
 )
 
-// The source, and where GoRex embeds what the build makes of it.
+// The source, and where torex embeds what the build makes of it.
 const (
 	sourceTarball = "third_party/vim/vendor/vim-9.2.1345.tar.gz"
 	sourceSHA256  = "ddae84ef8d9e8fcca1ec6e501a41235a2466e935a27d6a95e3a84677f84b8fb4"
@@ -49,7 +49,7 @@ func main() {
 	makeProg := flag.String("make", "", "make program (default $MAKE, make, or WinKit's bin)")
 	sh := flag.String("sh", "", "POSIX shell for make's recipes (default $SHELL or Git's)")
 	jobs := flag.Int("j", runtime.NumCPU(), "make jobs")
-	app := flag.Bool("app", false, "build GoRex after the editor")
+	app := flag.Bool("app", false, "build torex after the editor")
 	flag.Parse()
 
 	root, err := moduleRoot()
@@ -85,7 +85,7 @@ func main() {
 	}
 }
 
-// buildApp builds GoRex, with the editor just built.
+// buildApp builds torex, with the editor just built.
 func buildApp(root string) error {
 	fmt.Println("mkvim: go tool mygo build")
 	cmd := exec.Command("go", "tool", "mygo", "build")
@@ -295,7 +295,7 @@ func extract(root, workDir string) (string, error) {
 // compile builds the console vim of WinKit's runtime and returns its program.
 //
 // Without a GUI there is no GvimExt, no gvim, and no msvcrt; WINVER is the
-// Windows 10 of this GoRex, whose headers name the mouse wheel event that vim
+// Windows 10 of this torex, whose headers name the mouse wheel event that vim
 // reports. ARCH is left to the makefile, whose -march=x86-64 zigcc respells.
 //
 // Vim has no system vimrc on MS-Windows; SYS_VIMRC_FILE names the one of the
@@ -321,7 +321,7 @@ func compile(root, src, workDir string, t toolchain, jobs int) (string, error) {
 	return filepath.Join(src, "src", "vim.exe"), nil
 }
 
-// install copies the editor where GoRex embeds it: the runtime's version is
+// install copies the editor where torex embeds it: the runtime's version is
 // its checksum, so a new one is unpacked anew.
 func install(root, bin string) error {
 	b, err := os.ReadFile(bin)
@@ -341,7 +341,7 @@ func install(root, bin string) error {
 }
 
 // installRuntime copies vim's runtime files, and our system vimrc, where
-// GoRex embeds them: $VIMRUNTIME and $VIM name that directory.
+// torex embeds them: $VIMRUNTIME and $VIM name that directory.
 func installRuntime(root, src string) error {
 	dst := filepath.Join(root, runtimePath)
 	os.RemoveAll(dst)
@@ -414,7 +414,7 @@ func run(t toolchain, dir, prog string, args ...string) error {
 	return nil
 }
 
-// moduleRoot returns the directory of the go.mod of GoRex.
+// moduleRoot returns the directory of the go.mod of torex.
 func moduleRoot() (string, error) {
 	out, err := exec.Command("go", "env", "GOMOD").Output()
 	if err != nil {
@@ -422,7 +422,7 @@ func moduleRoot() (string, error) {
 	}
 	mod := strings.TrimSpace(string(out))
 	if mod == "" || mod == os.DevNull {
-		return "", fmt.Errorf("not in GoRex's module: run it from its directory")
+		return "", fmt.Errorf("not in torex's module: run it from its directory")
 	}
 	return filepath.Dir(mod), nil
 }
