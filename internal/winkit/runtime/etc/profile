@@ -47,7 +47,44 @@ case $- in
 	# the shell has no /tmp of its own.
 	PROMPT_MARK="${TMPDIR:-${TEMP:-$HOME}}/.torex-prompt-$$"
 	trap 'rm -f "$PROMPT_MARK"' 0
-	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]'"$PROMPT_SIGN "
+	# The branch of the Git repository the directory is in, as WinKit
+	# shows it: <branch> after the directory, nothing outside one. HEAD is
+	# read rather than git run, which a prompt would wait for.
+	prompt_git() {
+		dir=$PWD
+		while :; do
+			if [ -d "$dir/.git" ]; then
+				git=$dir/.git
+				break
+			fi
+			if [ -f "$dir/.git" ]; then
+				# A worktree or submodule: the .git file names the
+				# directory that holds HEAD, relative to this one.
+				read line < "$dir/.git" || return
+				git=${line#gitdir: }
+				[ "$git" != "$line" ] || return
+				case $git in
+				[A-Za-z]:/*|/*) ;;
+				*) git=$dir/$git ;;
+				esac
+				break
+			fi
+			case $dir in
+			*/) return ;;
+			*/*) dir=${dir%/*} ;;
+			*) return ;;
+			esac
+		done
+		[ -f "$git/HEAD" ] || return
+		read head < "$git/HEAD" || return
+		case $head in
+		'ref: refs/heads/'*)
+			# Cyan, apart from the blue directory and the green user.
+			printf ' \[\033[96m\]<%s>\[\033[0m\]' "${head#ref: refs/heads/}"
+			;;
+		esac
+	}
+	PS1='$(prompt_nl)\[\033[92m\]'"$PROMPT_USER"'\[\033[38;5;214m\]@\[\033[94m\]\w\[\033[0m\]$(prompt_git)'"$PROMPT_SIGN "
 	;;
 esac
 
