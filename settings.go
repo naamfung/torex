@@ -58,6 +58,7 @@ func applyAppearance() {
 func (a *App) setAppearance(v string) {
 	prefs.Appearance = v
 	applyAppearance()
+	setMenuTheme(mygo.Theme.IsDark())
 	saveSettings()
 }
 
