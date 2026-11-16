@@ -40,7 +40,10 @@ func installMenu() {
 		if err != nil {
 			continue
 		}
-		command.SetStringValue("", `"`+exe+`" "%V"`)
+		// A drive's root ends in a backslash, which would escape the
+		// closing quote: a slash before it keeps the quotes and passes
+		// C:\ whole, and folderArg cleans it back to a Windows path.
+		command.SetStringValue("", `"`+exe+`" "%V/"`)
 		command.Close()
 	}
 }

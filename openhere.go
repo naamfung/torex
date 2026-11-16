@@ -15,7 +15,10 @@ import (
 func folderArg(args []string) string {
 	for _, a := range args {
 		if st, err := os.Stat(a); err == nil && st.IsDir() {
-			return a
+			// The menu passes the folder with a trailing slash, and a
+			// drive's root keeps its backslash: Clean drops the one and
+			// leaves the root whole.
+			return filepath.Clean(a)
 		}
 	}
 	return ""
