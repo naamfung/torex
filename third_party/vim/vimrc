@@ -10,6 +10,10 @@ endif
 set encoding=utf-8
 set fileencodings=ucs-bom,utf-8,gb18030,big5,latin1
 
+" WinKit's vim keeps its state in $HOME/_viminfo; torex keeps it in the
+" hidden file the POSIX vim uses, so the home directory shows no stray file.
+set viminfofile=~/.viminfo
+
 " External commands, such as a filter on a range, run through the runtime's
 " shell, with the quoting a POSIX shell wants.
 set shell=/bin/sh
